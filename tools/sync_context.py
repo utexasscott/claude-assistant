@@ -1,10 +1,13 @@
 """
 Tool: sync_context.py
-Syncs the local context/ directory with a Google Drive folder named 'Claude Agent Context'.
+Syncs a local directory with a Google Drive folder.
 
 Usage:
   python tools/sync_context.py --direction pull   # Drive → local context/
   python tools/sync_context.py --direction push   # local context/ → Drive
+
+  # Push a specific subdirectory to a specific Drive folder (for sharing):
+  python tools/sync_context.py --direction push --source context/shared/allison --drive-folder "Co-Parenting Updates"
 """
 
 import argparse
@@ -25,8 +28,8 @@ load_dotenv()
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 CREDENTIALS_FILE = "auth/credentials.json"
 TOKEN_FILE = "auth/token_drive.json"
-DRIVE_FOLDER_NAME = "Claude Agent Context"
-LOCAL_CONTEXT_DIR = Path("context")
+DEFAULT_DRIVE_FOLDER = "Claude Agent Context"
+DEFAULT_LOCAL_DIR = Path("context")
 FOLDER_MIME = "application/vnd.google-apps.folder"
 
 
@@ -91,17 +94,17 @@ def list_drive_files(service, folder_id, path_prefix=""):
     return results
 
 
-def pull(service, root_folder_id):
-    """Download all files from Drive → local context/."""
-    print(f"Pulling '{DRIVE_FOLDER_NAME}' from Drive -> local context/ ...")
+def pull(service, root_folder_id, local_dir):
+    """Download all files from Drive → local directory."""
+    print(f"Pulling from Drive -> {local_dir}/ ...")
     files = list_drive_files(service, root_folder_id)
     if not files:
         print("Drive folder is empty — nothing to download.")
         return
-    LOCAL_CONTEXT_DIR.mkdir(exist_ok=True)
+    local_dir.mkdir(exist_ok=True)
     downloaded = 0
     for rel_path, file_id, is_folder in files:
-        local_path = LOCAL_CONTEXT_DIR / rel_path
+        local_path = local_dir / rel_path
         if is_folder:
             local_path.mkdir(parents=True, exist_ok=True)
             continue
@@ -117,22 +120,22 @@ def pull(service, root_folder_id):
             downloaded += 1
         except HttpError as e:
             print(f"  WARNING: Could not download '{rel_path}': {e}")
-    print(f"\nDone. {downloaded} file(s) pulled to context/")
+    print(f"\nDone. {downloaded} file(s) pulled to {local_dir}/")
 
 
-def push(service, root_folder_id):
-    """Upload all files from local context/ → Drive."""
-    print(f"Pushing local context/ -> Drive '{DRIVE_FOLDER_NAME}' ...")
-    if not LOCAL_CONTEXT_DIR.exists():
-        print("ERROR: local context/ directory not found.")
+def push(service, root_folder_id, local_dir):
+    """Upload all files from local directory → Drive."""
+    print(f"Pushing {local_dir}/ -> Drive ...")
+    if not local_dir.exists():
+        print(f"ERROR: local directory '{local_dir}' not found.")
         sys.exit(1)
     # Cache folder IDs by relative path to avoid redundant API calls
     folder_id_cache = {"": root_folder_id}
     uploaded = 0
-    for local_file in sorted(LOCAL_CONTEXT_DIR.rglob("*")):
+    for local_file in sorted(local_dir.rglob("*")):
         if local_file.is_dir():
             continue
-        rel_path = local_file.relative_to(LOCAL_CONTEXT_DIR)
+        rel_path = local_file.relative_to(local_dir)
         rel_parts = rel_path.parts
         # Ensure all parent folders exist in Drive
         parent_id = root_folder_id
@@ -157,25 +160,36 @@ def push(service, root_folder_id):
             uploaded += 1
         except HttpError as e:
             print(f"  WARNING: Could not upload '{rel_path}': {e}")
-    print(f"\nDone. {uploaded} file(s) pushed to Drive '{DRIVE_FOLDER_NAME}'")
+    print(f"\nDone. {uploaded} file(s) pushed to Drive")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sync context/ with Google Drive")
+    parser = argparse.ArgumentParser(description="Sync a local directory with Google Drive")
     parser.add_argument(
         "--direction",
         choices=["pull", "push"],
         required=True,
-        help="pull = Drive → local context/, push = local context/ → Drive",
+        help="pull = Drive → local, push = local → Drive",
+    )
+    parser.add_argument(
+        "--source",
+        default=str(DEFAULT_LOCAL_DIR),
+        help="Local directory to push or pull into (default: context/)",
+    )
+    parser.add_argument(
+        "--drive-folder",
+        default=DEFAULT_DRIVE_FOLDER,
+        help='Google Drive folder name (default: "Claude Agent Context")',
     )
     args = parser.parse_args()
+    local_dir = Path(args.source)
     creds = get_credentials()
     service = build("drive", "v3", credentials=creds)
-    root_folder_id = find_or_create_folder(service, DRIVE_FOLDER_NAME)
+    root_folder_id = find_or_create_folder(service, args.drive_folder)
     if args.direction == "pull":
-        pull(service, root_folder_id)
+        pull(service, root_folder_id, local_dir)
     else:
-        push(service, root_folder_id)
+        push(service, root_folder_id, local_dir)
 
 
 if __name__ == "__main__":

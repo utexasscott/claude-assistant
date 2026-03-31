@@ -34,23 +34,15 @@ You're working inside the **WAT framework** (Workflows, Agents, Tools). This arc
 - Skills are committed to the repo and must contain no sensitive data
 
 **Session Sync**
-- `/session-start` — git-pull then Drive pull. Run at the start of every session on a new device.
-- `/session-push` — Drive push then git-push as a mid-session checkpoint. Does not end the session. Accepts an optional commit message.
-- `/session-end` — Drive push then git-push. Run when wrapping up. Accepts an optional commit message.
+- `/session-start` — pull latest from the private repo. Run at the start of every session on any device.
+- `/session-end` — security scan + push to private repo + push to public repo + push shared Drive files. Run when done. Accepts an optional commit message.
+- `/git-push` and `/git-pull` — underlying primitives available for ad-hoc use. Requires `gh` CLI authenticated (`gh auth login`).
 
-**GitHub Sync**
-- `/git-push` — stage all changes, auto-generate commit message, and push to GitHub.
-- `/git-pull` — pull latest changes from GitHub. Surfaces merge conflicts without auto-resolving.
-- Accepts an optional commit message argument: `/git-push my message here`
-- Requires `gh` CLI authenticated (`gh auth login`)
-
-**Context Sync (Google Drive)**
-- Personal context lives in `context/` locally and mirrors to a Google Drive folder named `Claude Agent Context`
-- `/pull` — pull Drive → local `context/` (use when starting on a new machine or after editing in Drive)
-- `/push` — push local `context/` → Drive (use after editing context files locally)
-- Both skills call `tools/sync_context.py --direction [pull|push]`
+**Sharing to Google Drive**
+- Personal context is tracked in the private GitHub repo — Drive is used **for sharing only**, not backup
+- `/push` — push `context/shared/` destinations to their Google Drive folders (e.g., co-parenting updates for Allison). Called automatically by session-end.
+- Sharing destinations and Drive folder names are defined in `context/context_policy.md` Section 2
 - Auth token: `auth/token_drive.json` (created on first run via browser OAuth flow)
-- Never sync automatically — only when the user explicitly asks to sync, pull, push, or update context
 
 **Why this matters:** When AI tries to handle every step directly, accuracy drops fast. If each step is 90% accurate, you're down to 59% success after just five steps. By offloading execution to deterministic scripts, you stay focused on orchestration and decision-making where you excel.
 
@@ -95,7 +87,7 @@ This loop is how the framework improves over time.
   skills/[name]/SKILL.md       # Claude Code slash commands — committed, no sensitive data.
 .tmp/                          # Temporary files. Regenerated as needed. Gitignored.
 auth/                          # Google OAuth — gitignored.
-context/                       # All personal data — entirely gitignored.
+context/                       # All personal data — tracked in private repo; gitignored in public repo.
 context_example/               # Shareable templates — committed to git, no personal data.
 tools/                         # Python scripts for deterministic execution. Committed.
 workflows/
@@ -108,10 +100,10 @@ CLAUDE-personal.md             # Personal extensions — committed to private re
 .env                           # API keys and credentials — NEVER committed.
 ```
 
-**Core principle:** Local files are just for processing. Anything I need to see or use lives in cloud services. Everything in `.tmp/` is disposable.
+**Core principle:** The private GitHub repo is the source of truth for all content, including personal context. Everything in `.tmp/` is disposable. Google Drive is used only for outbound sharing with specific people.
 
 **Git safety:** The public repo contains no personal data, credentials, or sensitive context:
-- `context/` — entirely gitignored; all personal data lives here
+- `context/` — tracked in the private repo; gitignored in the public repo
 - `context_example/` — committed; templates only, never fill in real data here
 - `workflows/public/` — committed; must contain no personal details
 - `workflows/private/` and `workflows/_index.md` — gitignored in the public repo
