@@ -1,6 +1,8 @@
 ---
 name: family
 description: Use when receiving an update about a family member, researching gift ideas, looking up gift ideas for a family member, or updating a family profile. DO NOT use for mental health treatment program research, admissions research, or program finding — those have dedicated workflows in the workflow index.
+metadata:
+  visibility: public
 ---
 
 ## Context

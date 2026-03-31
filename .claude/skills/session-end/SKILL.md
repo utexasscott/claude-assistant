@@ -3,6 +3,8 @@ name: session-end
 description: Use when ending a session, wrapping up work, syncing before closing, done for today, or finishing a work session.
 disable-model-invocation: true
 argument-hint: "[optional commit message]"
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

@@ -1,6 +1,8 @@
 ---
 name: morning-coffee
 description: Use when asking about today's schedule, running the morning routine, making a daily plan, checking what's on the calendar today, or starting the day with a plan.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

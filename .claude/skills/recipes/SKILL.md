@@ -1,7 +1,9 @@
 ---
 name: recipes
 description: Use when adding a recipe, editing a recipe, updating a recipe, listing recipes, showing recipes, viewing a recipe, deleting a recipe, or managing the recipe collection.
-argument-hint: [add | edit | list | view | delete] [recipe name]
+argument-hint: "[add | edit | list | view | delete] [recipe name]"
+metadata:
+  visibility: public
 ---
 
 ## Context

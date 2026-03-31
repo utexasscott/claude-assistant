@@ -2,6 +2,8 @@
 name: push
 description: Use when someone asks to push shared context to Google Drive, share co-parenting updates, push context to Drive for sharing, or upload shared files to Drive.
 disable-model-invocation: true
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

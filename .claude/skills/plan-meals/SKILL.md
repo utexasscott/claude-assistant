@@ -1,6 +1,8 @@
 ---
 name: plan-meals
 description: Use when planning meals for the week, making a meal plan, creating a grocery list, planning what to cook this week, or planning an HEB trip.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

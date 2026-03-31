@@ -5,6 +5,8 @@ description: >
   push a draft to Gmail, or draft an email in Gmail. NEVER sends the email —
   always saves to Drafts only.
 argument-hint: "[draft-file-path] [personal|work]"
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

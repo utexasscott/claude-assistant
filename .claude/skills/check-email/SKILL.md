@@ -1,6 +1,8 @@
 ---
 name: check-email
 description: Use when checking email, running an inbox triage, checking what's in the inbox, doing a mid-day email check, or reviewing unread email.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

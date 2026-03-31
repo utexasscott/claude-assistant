@@ -37,6 +37,7 @@ PUBLIC_SKILLS=(
   skill-builder
   update-sheet
   workflow-editor
+  push-public
 )
 
 echo "── Preparing work directory ──────────────────────────────────────────────────"

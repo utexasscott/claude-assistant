@@ -1,6 +1,8 @@
 ---
 name: security-sweep
 description: Use when running a security sweep, checking committed files for personal data, scanning for PII, auditing the repo for sensitive content, or doing a privacy check.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

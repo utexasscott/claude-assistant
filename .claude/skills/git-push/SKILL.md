@@ -3,6 +3,8 @@ name: git-push
 description: Use when someone asks to push to GitHub, git push, commit and push, sync to GitHub, or run /git-push.
 disable-model-invocation: true
 argument-hint: "[optional commit message]"
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

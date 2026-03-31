@@ -3,6 +3,8 @@ name: update-sheet
 description: Use when pushing rows to a Google Sheet, appending new data to a sheet, updating sheet rows, or writing JSON data to a spreadsheet. Invokes update_sheet.py safely.
 argument-hint: --sheet-id SHEET_ID --match-key "Column Name" --data .tmp/data.json
 disable-model-invocation: true
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

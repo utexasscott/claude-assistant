@@ -1,7 +1,9 @@
 ---
 name: read-journal
 description: Use when reading journal entries, reviewing recent journal, loading journal context, or checking what was written in the journal recently.
-argument-hint: [YYYY-MM-DD | number of days]
+argument-hint: "[YYYY-MM-DD | number of days]"
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

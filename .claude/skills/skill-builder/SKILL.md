@@ -1,6 +1,8 @@
 ---
 name: skill-builder
 description: Use when creating new skills, optimizing existing skills, auditing skill quality, or asking about how skills are organized, structured, or why organizational decisions were made.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does
@@ -22,23 +24,28 @@ For the complete technical reference on all frontmatter fields, advanced pattern
 ### Where skills live
 All skills — public and private — live in `.claude/skills/<name>/SKILL.md`. Claude Code only discovers skills from this exact path pattern; subdirectories like `.claude/private/skills/` are not scanned and won't work.
 
-### Private skills (personal data)
-Some skills reference personal data (family members, medical context, account-specific workflows) and must not be committed to the public repo. These are handled with **individual gitignore entries** in `.gitignore`:
+### Public vs. private skills
 
-```gitignore
-# ── Private skills (reference personal data — gitignored like private workflows) ─
-.claude/skills/myla-mh-email/
-.claude/skills/life-update/
-# ... etc
+**Authoritative source:** `tools/push_public.sh` contains a `PUBLIC_SKILLS` array that is the single source of truth for which skills are synced to the public repo. When creating a new skill, you must decide: is it public (generic, usable by anyone) or private (references personal data, accounts, or names)?
+
+- **Public skills** go in the `PUBLIC_SKILLS` whitelist in `tools/push_public.sh`. They must contain no personal data — no proper names, account identifiers, or specific organizations. Use role-based language (e.g., "the user's email account") instead.
+- **Private skills** are NOT added to that whitelist. They stay in the private repo only. Examples: `myla-mh-email`, `life-update`, `myla-progress`.
+
+All skills use a `metadata.visibility` field for self-documentation:
+```yaml
+metadata:
+  visibility: public   # safe to push to public repo; listed in push_public.sh PUBLIC_SKILLS
+metadata:
+  visibility: private  # personal data; not in PUBLIC_SKILLS whitelist
 ```
 
-**Why not `.claude/private/`?** Claude Code doesn't discover skills from subdirectories. A `.claude/private/` folder would silently fail — skills there would never load.
+When building a new skill:
+1. Determine public vs. private based on whether it contains personal data
+2. Set `metadata.visibility` to `public` or `private` in frontmatter
+3. If public: add the skill name to `PUBLIC_SKILLS` in `tools/push_public.sh`
+4. If private: do NOT add it to the whitelist
 
-**Why not a `private-` prefix?** It works technically (gitignore with `.claude/skills/private-*/`), but makes command names ugly (`/private-myla-progress`). Not worth it.
-
-**Why not `~/.claude/skills/`?** Personal scope skills are globally available and never committed, but they don't travel with the repo and require manual setup on each device.
-
-**Decision:** Individual gitignore entries per private skill. Explicit, reliable, zero naming tradeoffs.
+**Why all skills live in the same directory:** Claude Code only discovers skills from `.claude/skills/<name>/SKILL.md`. Subdirectories like `.claude/private/skills/` are silently ignored. All skills share the same path pattern; public/private is a sync concern, not a location concern.
 
 ## Quick Start: What Is a Skill?
 
@@ -140,6 +147,7 @@ Set these fields based on what you learned in discovery:
 
 - `name` -- Matches the directory name. Lowercase, hyphens, max 64 chars.
 - `description` -- Written as: "Use when someone asks to [action], [action], or [action]." Include natural keywords from the trigger phrases.
+- `metadata.visibility` -- Set to `public` or `private`. Public skills must also be listed in `tools/push_public.sh` `PUBLIC_SKILLS`. See "Skill Organization Decisions" above.
 - `disable-model-invocation: true` -- Set if the skill has side effects (file generation, API calls, costs money). Prevents Claude from auto-invoking.
 - `argument-hint` -- Set if the skill accepts arguments. Shows in the `/` menu autocomplete.
 - `context: fork` + `agent` -- Set if the skill is self-contained and doesn't need conversation history.
@@ -253,6 +261,7 @@ Use this checklist to audit any existing skill. Read the skill file first before
 ### Frontmatter Audit
 
 - [ ] `name` matches the directory name
+- [ ] `metadata.visibility` is set to `public` or `private`; if `public`, skill name is in `tools/push_public.sh` `PUBLIC_SKILLS`
 - [ ] `description` uses natural keywords someone would actually say when they need this skill
 - [ ] `description` is specific enough to avoid false triggers but broad enough to catch real requests
 - [ ] `disable-model-invocation: true` is set if the skill has side effects (generates files, calls APIs, sends messages, costs money)

@@ -1,6 +1,8 @@
 ---
 name: onboarding
 description: Use when setting up the personal assistant for the first time, running onboarding, initializing the system, doing first-time setup, or configuring a new instance.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

@@ -2,6 +2,8 @@
 name: git-pull
 description: Use when someone asks to pull from GitHub, git pull, sync from GitHub, get latest changes, or run /git-pull.
 disable-model-invocation: true
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

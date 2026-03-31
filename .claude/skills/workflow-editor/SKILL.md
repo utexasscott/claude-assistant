@@ -1,6 +1,8 @@
 ---
 name: workflow-editor
 description: Use when creating a new workflow, adding a workflow, defining a new process, updating an existing workflow, modifying workflow steps, making changes to a workflow, or refactoring content between a workflow and a skill.
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

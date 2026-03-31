@@ -1,7 +1,9 @@
 ---
 name: journal
 description: Use when writing a journal entry, adding to today's journal, logging something to the journal, updating a journal entry, or recording notes or observations for the day.
-argument-hint: [content or .tmp/file-path]
+argument-hint: "[content or .tmp/file-path]"
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does

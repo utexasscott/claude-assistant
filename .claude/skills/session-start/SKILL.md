@@ -2,6 +2,8 @@
 name: session-start
 description: Use when starting a session, syncing before starting work, setting up on a new device, or beginning a work session.
 disable-model-invocation: true
+metadata:
+  visibility: public
 ---
 
 ## What This Skill Does
