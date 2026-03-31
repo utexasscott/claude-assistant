@@ -3,8 +3,8 @@
 # Usage: bash tools/push_public.sh ["optional commit message"]
 #
 # Public-safe content: tools/, workflows/public/, workflows/_example/,
-# context_example/, whitelisted skills, and a sanitized CLAUDE.md.
-# Everything else (context/, private workflows, personal skills) stays private.
+# context_example/, whitelisted skills, and CLAUDE.md.
+# CLAUDE-personal.md and everything else personal stays in the private repo.
 
 set -euo pipefail
 
@@ -92,12 +92,9 @@ for skill in "${PUBLIC_SKILLS[@]}"; do
   fi
 done
 
-echo "── Sanitizing and copying CLAUDE.md ─────────────────────────────────────────"
-# Replace first-person name references with generic "the user" for public version
-sed \
-  -e 's/\bScott\b/the user/g' \
-  -e 's/context\/scott_north\.md/context\/[user].md/g' \
-  "$REPO_ROOT/CLAUDE.md" > "$WORK_DIR/CLAUDE.md"
+echo "── Copying CLAUDE.md ────────────────────────────────────────────────────────"
+# CLAUDE.md is now public-safe by design. CLAUDE-personal.md stays private.
+cp "$REPO_ROOT/CLAUDE.md" "$WORK_DIR/CLAUDE.md"
 
 echo "── Writing public .gitignore ─────────────────────────────────────────────────"
 cat > "$WORK_DIR/.gitignore" << 'GITIGNORE'

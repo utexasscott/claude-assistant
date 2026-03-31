@@ -30,7 +30,7 @@ Run `git status --porcelain`.
 Scope the scan to only the files that will be staged. From the `git status --porcelain` output:
 
 1. Extract all file paths (the second column, after the two-character status code).
-2. Filter to only files in committed paths: `tools/`, `.claude/skills/`, `workflows/public/`, `context_example/`, `CLAUDE.md`, `README.md`. Skip anything in gitignored paths (`context/`, `auth/`, `.env`, `.tmp/`, `workflows/private/`).
+2. Filter to only files in committed paths: `tools/`, `.claude/skills/`, `workflows/public/`, `workflows/private/`, `workflows/_index.md`, `context_example/`, `CLAUDE.md`, `CLAUDE-personal.md`, `README.md`. Skip anything in gitignored paths (`context/`, `auth/`, `.env`, `.tmp/`).
 3. If no files remain after filtering, note "Security scan: no committed-path files changing" and skip to Step 4.
 4. Read each remaining file and scan for:
    - Command injection (`subprocess` with `shell=True` + unsanitized input)

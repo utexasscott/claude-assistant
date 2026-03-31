@@ -1,5 +1,7 @@
 # Agent Instructions
 
+> **Personal extensions:** If `CLAUDE-personal.md` exists in this directory, **read it now** before continuing. It contains personal configuration and context rules that extend the generic instructions below.
+
 You're working inside the **WAT framework** (Workflows, Agents, Tools). This architecture separates concerns so that probabilistic AI handles reasoning while deterministic code handles execution. That separation is what makes this system reliable.
 
 ## The WAT Architecture
@@ -37,7 +39,7 @@ You're working inside the **WAT framework** (Workflows, Agents, Tools). This arc
 - `/session-end` — Drive push then git-push. Run when wrapping up. Accepts an optional commit message.
 
 **GitHub Sync**
-- `/git-push` — stage all changes, auto-generate commit message, and push to GitHub. On first run, initializes the repo and creates the private `personal-assistant` GitHub repo via `gh` CLI.
+- `/git-push` — stage all changes, auto-generate commit message, and push to GitHub.
 - `/git-pull` — pull latest changes from GitHub. Surfaces merge conflicts without auto-resolving.
 - Accepts an optional commit message argument: `/git-push my message here`
 - Requires `gh` CLI authenticated (`gh auth login`)
@@ -97,40 +99,28 @@ context/                       # All personal data — entirely gitignored.
 context_example/               # Shareable templates — committed to git, no personal data.
 tools/                         # Python scripts for deterministic execution. Committed.
 workflows/
-  _index.md                    # Personal route table — gitignored.
+  _index.md                    # Personal route table — gitignored in public repo.
   _example/                    # Example _index.md template — committed.
   public/                      # Shareable SOPs — committed to git, no sensitive data.
-  private/                     # Sensitive SOPs — gitignored.
+  private/                     # Sensitive SOPs — gitignored in public repo.
+CLAUDE.md                      # Generic agent instructions — committed, public-safe.
+CLAUDE-personal.md             # Personal extensions — committed to private repo only.
 .env                           # API keys and credentials — NEVER committed.
 ```
 
 **Core principle:** Local files are just for processing. Anything I need to see or use lives in cloud services. Everything in `.tmp/` is disposable.
 
-**Git safety:** This project is designed to be published. The rule is simple — committed paths contain no personal data, credentials, or sensitive context:
+**Git safety:** The public repo contains no personal data, credentials, or sensitive context:
 - `context/` — entirely gitignored; all personal data lives here
 - `context_example/` — committed; templates only, never fill in real data here
 - `workflows/public/` — committed; must contain no personal details
-- `workflows/private/` and `workflows/_index.md` — gitignored
+- `workflows/private/` and `workflows/_index.md` — gitignored in the public repo
+- `CLAUDE-personal.md` — committed to the private repo only; never included in public pushes
 - `.env`, token files — never committed
 
 Everything else — tools, public workflows, skills, and example templates — should be safe to commit and share at any time. Never put sensitive content in a committed path, even temporarily.
 
-**What counts as personal data:** Proper nouns tied to a specific person — names of their children's schools, medical providers, therapy programs, team or club memberships, specific organizations, email addresses, and phone numbers. Generic role-based references are fine in public workflows (e.g., "school communications", "the user's work account"). Specific institution names are not (e.g., a school name, a scout pack number) — those belong in `context/`. When creating or editing a public workflow, run a quick scan for proper nouns before writing.
-
-## Context File Rules
-
-**Never write ephemeral or time-relative statements to context files.** Context files are read in future conversations with no knowledge of when something was said. Phrases like "tomorrow," "yesterday," "this week," "soon," or "plans to" are only meaningful in the moment — they become misleading or false later. Instead:
-- Use explicit dates when timing matters: "As of 2026-03-25, the user planned to..."
-- Capture the durable insight, not the action item: instead of "will call Sarah tomorrow," write "the user's guidance for Sarah's approach: ..."
-- If something is genuinely time-bounded and will expire, note the date explicitly or don't write it at all
-
-**Continuously update context files during conversations.** Any time the user shares something meaningful about himself, his family, his emotional state, his thinking, or his plans — write it to the relevant context file immediately. Don't batch updates for the end of the session. This includes implicit things: what a story reveals about the user's values, parenting style, emotional tendencies, or relationship patterns — not just explicit facts.
-
-**Capture observations about the user's thinking and psychology.** When the user reveals something about how his mind works, what gives him peace, how he processes things, or what he needs — write it to `context/[user].md`. These observations are as valuable as factual updates.
-
-**Journal updates are detailed and narrative.** When the user recounts his day or tells stories step by step, capture *all of it* in the journal — the sequence, the dialogue, the emotions, the decisions, the small details and observations. The journal should read like a rich narrative, not a summary. Do not compress or paraphrase what was said. Write the journal entry as you receive the story, not at the end.
-
-**Create new context files proactively.** When a topic is substantial enough to warrant its own file — a treatment program, a key relationship, a project, a recurring situation — create it immediately without asking. Link to it from the relevant context files. Do not wait for the user to suggest it. Examples that warrant dedicated files: a multi-month treatment program, a family therapist or key clinical contact, a business with significant ongoing state, an ongoing co-parenting conflict with documented patterns.
+**What counts as personal data:** Proper nouns tied to a specific person — names of their children's schools, medical providers, therapy programs, team or club memberships, specific organizations, email addresses, and phone numbers. Generic role-based references are fine in public workflows (e.g., "school communications", "the user's work account"). Specific institution names are not — those belong in `context/`. When creating or editing a public workflow, run a quick scan for proper nouns before writing.
 
 ## Bottom Line
 
