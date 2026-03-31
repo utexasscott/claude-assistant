@@ -6,8 +6,11 @@ Usage:
   python tools/sync_context.py --direction pull   # Drive → local context/
   python tools/sync_context.py --direction push   # local context/ → Drive
 
-  # Push a specific subdirectory to a specific Drive folder (for sharing):
-  python tools/sync_context.py --direction push --source context/shared/allison --drive-folder "Co-Parenting Updates"
+  # Push a specific subdirectory to a nested Drive folder path (for sharing):
+  python tools/sync_context.py --direction push --source context/shared/allison --drive-folder "Claude Assistant/Shared/Allison"
+
+  --drive-folder supports slash-separated nested paths (e.g. "Claude Assistant/Shared/Allison").
+  Each folder in the path is created if it doesn't exist.
 """
 
 import argparse
@@ -68,6 +71,19 @@ def find_or_create_folder(service, name, parent_id=None):
     folder = service.files().create(body=metadata, fields="id").execute()
     print(f"  Created Drive folder: {name}")
     return folder["id"]
+
+
+def resolve_drive_path(service, path):
+    """Resolve a slash-separated Drive folder path, creating each level if needed.
+
+    e.g. "Claude Assistant/Shared/Allison" → traverses three nested folders.
+    A flat name like "My Folder" works identically to before.
+    """
+    parts = [p.strip() for p in path.split("/") if p.strip()]
+    parent_id = None
+    for part in parts:
+        parent_id = find_or_create_folder(service, part, parent_id)
+    return parent_id
 
 
 def list_drive_files(service, folder_id, path_prefix=""):
@@ -185,7 +201,7 @@ def main():
     local_dir = Path(args.source)
     creds = get_credentials()
     service = build("drive", "v3", credentials=creds)
-    root_folder_id = find_or_create_folder(service, args.drive_folder)
+    root_folder_id = resolve_drive_path(service, args.drive_folder)
     if args.direction == "pull":
         pull(service, root_folder_id, local_dir)
     else:

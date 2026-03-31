@@ -26,7 +26,7 @@ Read `context/context_policy.md` Section 2 to get the list of destinations (loca
 For each destination defined there:
 
 ```
-python tools/sync_context.py --direction push --source context/shared/[person] --drive-folder "[Drive folder name]"
+python tools/sync_context.py --direction push --source context/shared/[person] --drive-folder "[Drive folder path]"
 ```
 
 Report which files were uploaded or updated for each destination.

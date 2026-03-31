@@ -74,7 +74,13 @@ Then place the new content using the first rule that matches:
 - *Append within section* when the new content is a new event, new thought, or additional context — it doesn't invalidate what's already there.
 - When in doubt, append within the section rather than modifying existing text.
 
-### 6. Confirm
+### 6. Update shared context
+
+After writing, check whether the entry contains content about the children: Myla, Davis, Arlo, or Kayleigh. If it does, create or update `context/shared/allison/journal/YYYY-MM-DD.md` following the format in `context/context_policy.md` Section 2.
+
+If the entry contains no child-relevant content, skip this step.
+
+### 7. Confirm
 
 Reply with one short line confirming what was written, to which date's entry, and which section was affected. Do not restate the content.
 
