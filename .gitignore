@@ -1,0 +1,22 @@
+# ── Secrets & credentials ─────────────────────────────────────────────────────
+.env
+auth/
+
+# ── Temporary processing files ─────────────────────────────────────────────────
+.tmp/
+
+# ── Personal context ───────────────────────────────────────────────────────────
+# Populate your own from the templates in context_example/
+context/
+
+# ── Personal workflows and skills ─────────────────────────────────────────────
+# Add your private workflows and personal skills here — keep them out of git
+workflows/_index.md
+workflows/private/
+
+# ── OS / editor noise ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.pyc
+__pycache__/
+.venv/

@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# push_public.sh — Syncs public-safe files to the claude-assistant public repo.
+# Usage: bash tools/push_public.sh ["optional commit message"]
+#
+# Public-safe content: tools/, workflows/public/, workflows/_example/,
+# context_example/, whitelisted skills, and a sanitized CLAUDE.md.
+# Everything else (context/, private workflows, personal skills) stays private.
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PUBLIC_REMOTE="https://github.com/utexasscott/claude-assistant.git"
+WORK_DIR="$REPO_ROOT/.tmp/claude-assistant"
+COMMIT_MSG="${1:-Sync public-safe content from personal-assistant}"
+
+# ── Public skills whitelist ────────────────────────────────────────────────────
+PUBLIC_SKILLS=(
+  check-email
+  context
+  excalidraw-diagram
+  family
+  git-pull
+  git-push
+  gmail-draft
+  journal
+  morning-coffee
+  onboarding
+  plan-meals
+  pull
+  push
+  read-journal
+  recipes
+  security-sweep
+  session-end
+  session-push
+  session-start
+  skill-builder
+  update-sheet
+  workflow-editor
+)
+
+echo "── Preparing work directory ──────────────────────────────────────────────────"
+if [ -d "$WORK_DIR/.git" ]; then
+  echo "Pulling latest public repo..."
+  # Skip pull if the remote has no commits yet (initial push)
+  if git -C "$WORK_DIR" ls-remote --exit-code origin HEAD &>/dev/null; then
+    git -C "$WORK_DIR" pull --ff-only
+  else
+    echo "Remote is empty — skipping pull."
+  fi
+else
+  echo "Cloning public repo..."
+  mkdir -p "$WORK_DIR"
+  git clone "$PUBLIC_REMOTE" "$WORK_DIR"
+fi
+
+# Carry local git identity into the work dir (it may not have global config)
+GIT_USER="$(git -C "$REPO_ROOT" config user.name)"
+GIT_EMAIL="$(git -C "$REPO_ROOT" config user.email)"
+git -C "$WORK_DIR" config user.name "$GIT_USER"
+git -C "$WORK_DIR" config user.email "$GIT_EMAIL"
+
+echo "── Clearing existing content (preserving .git) ───────────────────────────────"
+find "$WORK_DIR" -mindepth 1 -not -path "$WORK_DIR/.git*" -delete
+
+echo "── Copying public-safe directories ──────────────────────────────────────────"
+# tools/
+mkdir -p "$WORK_DIR/tools"
+cp -r "$REPO_ROOT/tools/." "$WORK_DIR/tools/"
+
+# workflows/public/ and workflows/_example/
+mkdir -p "$WORK_DIR/workflows/public" "$WORK_DIR/workflows/_example"
+cp -r "$REPO_ROOT/workflows/public/." "$WORK_DIR/workflows/public/"
+cp -r "$REPO_ROOT/workflows/_example/." "$WORK_DIR/workflows/_example/"
+
+# context_example/
+if [ -d "$REPO_ROOT/context_example" ]; then
+  mkdir -p "$WORK_DIR/context_example"
+  cp -r "$REPO_ROOT/context_example/." "$WORK_DIR/context_example/"
+fi
+
+echo "── Copying whitelisted skills ────────────────────────────────────────────────"
+mkdir -p "$WORK_DIR/.claude/skills"
+for skill in "${PUBLIC_SKILLS[@]}"; do
+  src="$REPO_ROOT/.claude/skills/$skill"
+  if [ -d "$src" ]; then
+    mkdir -p "$WORK_DIR/.claude/skills/$skill"
+    cp -r "$src/." "$WORK_DIR/.claude/skills/$skill/"
+    echo "  + $skill"
+  else
+    echo "  ! $skill not found, skipping"
+  fi
+done
+
+echo "── Sanitizing and copying CLAUDE.md ─────────────────────────────────────────"
+# Replace first-person name references with generic "the user" for public version
+sed \
+  -e 's/\bScott\b/the user/g' \
+  -e 's/context\/scott_north\.md/context\/[user].md/g' \
+  "$REPO_ROOT/CLAUDE.md" > "$WORK_DIR/CLAUDE.md"
+
+echo "── Writing public .gitignore ─────────────────────────────────────────────────"
+cat > "$WORK_DIR/.gitignore" << 'GITIGNORE'
+# ── Secrets & credentials ─────────────────────────────────────────────────────
+.env
+auth/
+
+# ── Temporary processing files ─────────────────────────────────────────────────
+.tmp/
+
+# ── Personal context ───────────────────────────────────────────────────────────
+# Populate your own from the templates in context_example/
+context/
+
+# ── Personal workflows and skills ─────────────────────────────────────────────
+# Add your private workflows and personal skills here — keep them out of git
+workflows/_index.md
+workflows/private/
+
+# ── OS / editor noise ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.pyc
+__pycache__/
+.venv/
+GITIGNORE
+
+echo "── Committing and pushing ────────────────────────────────────────────────────"
+git -C "$WORK_DIR" add -A
+
+if git -C "$WORK_DIR" diff --cached --quiet; then
+  echo "Nothing changed — public repo is already up to date."
+  exit 0
+fi
+
+git -C "$WORK_DIR" commit -m "$COMMIT_MSG"
+git -C "$WORK_DIR" push origin main
+
+echo "── Done ──────────────────────────────────────────────────────────────────────"
+echo "Public repo updated: $PUBLIC_REMOTE"
