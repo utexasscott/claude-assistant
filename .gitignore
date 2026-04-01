@@ -14,6 +14,10 @@ context/
 workflows/_index.md
 workflows/private/
 
+# ── Personal skill extensions ──────────────────────────────────────────────────
+# SKILL-personal.md files extend public skills with user-specific config
+**SKILL-personal.md
+
 # ── OS / editor noise ──────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

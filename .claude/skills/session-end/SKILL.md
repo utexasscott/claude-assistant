@@ -60,7 +60,7 @@ Follow all steps in `.claude/skills/push-public/SKILL.md` exactly.
 
 Follow all steps in `.claude/skills/push/SKILL.md` exactly.
 
-- This pushes co-parenting updates from `context/shared/` to Google Drive for Allison.
+- This pushes shared context from `context/shared/` to Google Drive for configured recipients (defined in `context/context_policy.md`).
 - If there is nothing to share, the push skill will report "nothing to push" and exit cleanly.
 - A Drive push failure does NOT invalidate the session end — git is the backup, Drive is for sharing.
 

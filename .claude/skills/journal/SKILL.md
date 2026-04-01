@@ -6,6 +6,10 @@ metadata:
   visibility: public
 ---
 
+**Personal configuration:** If `SKILL-personal.md` exists in `.claude/skills/journal/`, read it now before continuing. It contains user-specific names, section headings, narrative voice, and sharing destinations that override the generic defaults below.
+
+---
+
 ## What This Skill Does
 
 Creates or appends to a daily journal entry at `context/journal/YYYY-MM-DD.md`. Organizes content into well-structured, logically-ordered sections. Maintains raw source files in `context/journal/raw/YYYY-MM-DD/` for voice-to-text input and external AI conversations. Called by the user directly or invoked by workflows that need to log output to the journal.
@@ -38,7 +42,7 @@ There are three ways content arrives:
 **If the user asked to read raw files (Case 2):**
 - Read the specified file(s) from `context/journal/raw/YYYY-MM-DD/`
 - If no specific file is named, read all files in that folder
-- Proceed to Step 4 — do NOT create `auto-generated.txt`
+- Proceed to Step 3.5 — do NOT create `auto-generated.txt`
 
 **If `$ARGUMENTS` starts with `.tmp/` or ends with `.md` (file path):**
 - Read content from that file path
@@ -57,6 +61,19 @@ Save the raw input to `context/journal/raw/YYYY-MM-DD/auto-generated.txt`:
 
 This preserves the unfiltered source before any processing.
 
+### 3.5. Resolve bracketed questions
+
+Scan the collected content for any text in square brackets `[...]`. These are notes left during dictation — something that couldn't be remembered, an unclear detail, or a follow-up question.
+
+**If any brackets are found:**
+- Stop. List each bracketed item and ask for clarification before continuing.
+- Wait for the response, then substitute the resolved content in place of the bracket text.
+- Do not continue to the journal-writing steps until all brackets are resolved.
+
+**Note:** When writing to the raw file (Step 3), always preserve the original bracket text verbatim — the raw file is the unfiltered source and should not be altered.
+
+If no brackets are found, continue immediately.
+
 ### 4. Read the existing journal file (if it exists)
 
 If `context/journal/YYYY-MM-DD.md` already exists, read it now. You need its current contents to make categorization and placement decisions.
@@ -65,8 +82,8 @@ If `context/journal/YYYY-MM-DD.md` already exists, read it now. You need its cur
 
 Determine the best semantic category (or categories) for the content. Common sections (not exhaustive):
 
-- `Myla` — updates about Myla's program, mental health, behavior, or interactions with her
-- `Family` — updates about other children, ex-spouse, extended family, or family dynamics
+- `[Person]` — updates about a tracked individual's wellbeing, program, or interactions (see SKILL-personal.md for names and specific section labels)
+- `Family` — updates about children, co-parent, extended family, or family dynamics
 - `Health` — gym, physical health, sleep, personal wellness
 - `Relationships` — dating, friendships, social connection, intimacy
 - `Work / Projects` — professional work, the personal assistant project, business matters
@@ -116,9 +133,11 @@ The `.md` journal file is a polished record, not a raw transcript. When writing 
 
 ### 8. Update shared context
 
-After writing, check whether the entry contains content about the children: Myla, Davis, Arlo, or Kayleigh. If it does, create or update `context/shared/allison/journal/YYYY-MM-DD.md` following the format in `context/context_policy.md` Section 2.
+If `SKILL-personal.md` defines a sharing configuration, check whether the entry contains content relevant to each configured destination. If it does, create or update the shared context file at the path specified in `SKILL-personal.md`, following the format in `context/context_policy.md` Section 2.
 
-If the entry contains no child-relevant content, skip this step.
+**Important:** The shared entry must be derived from the polished journal file (`context/journal/YYYY-MM-DD.md`), never from raw source files. "Verbatim from the journal entry" means the cleaned, chronologically-ordered `.md` file — not the raw dictation. This ensures the shared entry inherits the polished prose and never contains navigational asides ("Back to that phone call...", "Now back to...") that belong only in the raw files.
+
+If no sharing configuration is defined, or the entry contains no relevant content, skip this step.
 
 ### 9. Confirm
 
@@ -130,8 +149,8 @@ Reply with one short line confirming what was written, to which date's entry, an
 
 When a workflow instructs you to journal a conversation (rather than logging verbatim content), you are authoring the entry. Write it this way:
 
-- **Third-person prose** — "Scott talked about...", "The conversation turned to...", "He mentioned..."
-- **Capture texture and detail** — don't compress or summarize. If Scott described a specific moment or exchange, write it with enough detail that it reads as a coherent account, not a summary.
+- **Third-person prose** — "The user talked about...", "The conversation turned to...", "They mentioned..." (see SKILL-personal.md for the user's name and preferred pronoun)
+- **Capture texture and detail** — don't compress or summarize. If the user described a specific moment or exchange, write it with enough detail that it reads as a coherent account, not a summary.
 - **Don't editorialize** — record what happened and what was said. Avoid interpreting motives or adding analysis unless it was spoken explicitly.
 - **Capture all meaningful content** — significant updates or disclosures, emotional moments or shifts in tone, decisions made or being wrestled with, anything that would be meaningful to read back later.
 

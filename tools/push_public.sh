@@ -87,6 +87,8 @@ for skill in "${PUBLIC_SKILLS[@]}"; do
   if [ -d "$src" ]; then
     mkdir -p "$WORK_DIR/.claude/skills/$skill"
     cp -r "$src/." "$WORK_DIR/.claude/skills/$skill/"
+    # Strip personal extension files — these are private and must not appear in the public repo
+    find "$WORK_DIR/.claude/skills/$skill" -name "SKILL-personal.md" -delete
     echo "  + $skill"
   else
     echo "  ! $skill not found, skipping"
@@ -114,6 +116,10 @@ context/
 # Add your private workflows and personal skills here — keep them out of git
 workflows/_index.md
 workflows/private/
+
+# ── Personal skill extensions ──────────────────────────────────────────────────
+# SKILL-personal.md files extend public skills with user-specific config
+**SKILL-personal.md
 
 # ── OS / editor noise ──────────────────────────────────────────────────────────
 .DS_Store
