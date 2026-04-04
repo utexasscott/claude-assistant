@@ -142,7 +142,20 @@ If `SKILL-personal.md` defines a sharing configuration, check whether the entry 
 
 If no sharing configuration is defined, or the entry contains no relevant content, skip this step.
 
-### 9. Confirm
+### 9. Update context profile files
+
+After writing the journal entry, check whether the content contains durable information that belongs in context profile files — not just the journal. The journal is the daily narrative; context files hold standing, updatable facts.
+
+Use `context/context_policy.md` Section 1 to identify which files should be updated based on the content. For each file that needs an update:
+- Invoke `/context` as the quality gate before writing (applies Checks 1–5 from that skill)
+- Add new entries to the file's Updates Log following the format in `/context` Check 4
+- Do not duplicate content already accurately captured in the file
+
+If `SKILL-personal.md` defines a list of profile files to check, use that list.
+
+Skip this step if the journal content is purely narrative (events only, no durable standing facts) or if all relevant context files are already current.
+
+### 10. Confirm
 
 Reply with one short line confirming what was written, to which date's entry, and which section(s) were affected. Do not restate the content.
 
