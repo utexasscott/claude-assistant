@@ -61,14 +61,17 @@ Save the raw input to `context/journal/raw/YYYY-MM-DD/auto-generated.txt`:
 
 This preserves the unfiltered source before any processing.
 
-### 3.5. Resolve bracketed questions
+### 3.5. Interpret bracketed notes
 
-Scan the collected content for any text in square brackets `[...]`. These are notes left during dictation — something that couldn't be remembered, an unclear detail, or a follow-up question.
+Scan the collected content for any text in square brackets `[...]`. These are always directed at you — never part of the journal narrative. They serve one of three purposes; read each one and determine which applies:
 
-**If any brackets are found:**
-- Stop. List each bracketed item and ask for clarification before continuing.
-- Wait for the response, then substitute the resolved content in place of the bracket text.
-- Do not continue to the journal-writing steps until all brackets are resolved.
+| Type | How to recognize it | What to do |
+|---|---|---|
+| **Question** | Asks you to clarify something, check a fact, or confirm a detail | Stop. Ask the user before continuing. Wait for a response, then substitute the resolved content. |
+| **Context / background** | Provides background information (who someone is, what something means, history) | Use it silently to inform your writing. Do not include the bracket text in the journal. |
+| **Instruction** | Tells you to do something (read a file, create a file, look something up) | Execute it. Do not include the bracket text in the journal. |
+
+If a bracket contains a question, stop and surface it before proceeding. Multiple questions can be batched in one ask. Context and instructions can be resolved without interrupting the user.
 
 **Note:** When writing to the raw file (Step 3), always preserve the original bracket text verbatim — the raw file is the unfiltered source and should not be altered.
 
