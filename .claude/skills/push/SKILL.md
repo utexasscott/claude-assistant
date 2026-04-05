@@ -21,7 +21,7 @@ Check whether `context/shared/` contains any person directories with files.
 
 ### Step 2: Push each destination
 
-Read `context/context_policy.md` Section 2 to get the list of destinations (local path + Drive folder name for each person).
+Read `.claude/skills/context/SKILL-personal.md` Section 2 to get the list of destinations (local path + Drive folder name for each person).
 
 For each destination defined there:
 

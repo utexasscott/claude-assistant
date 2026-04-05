@@ -152,8 +152,8 @@ Ask:
 > Do you have family members or close relationships you'd like me to track context on — kids, a partner, parents? This helps with gift ideas, scheduling, and keeping up with what's going on in their lives.
 
 If yes:
-- Walk through `context_example/family/family_overview.md` — fill in household structure and any children/dependents in the table.
-- For each person they want a detailed profile on, copy `context_example/family/child.md` to `context/family/[firstname_lastname].md` and fill it in with whatever they share.
+- Walk through `context_example/profiles/family_overview.md` — fill in household structure and any children/dependents in the table.
+- For each person they want a detailed profile on, copy `context_example/profiles/child.md` to `context/profiles/[firstname_lastname].md` and fill it in with whatever they share.
 
 If no, skip.
 
@@ -237,7 +237,7 @@ Personal email: Authenticated ✓ ([N] emails fetched)
 Work email:   [Authenticated ✓ | Skipped — no work email configured]
 Google Keep:  [Authenticated ✓ | Skipped — run setup_keep_auth.py when ready]
 Objectives:   [Set up ✓ | Not set up — fill in context/objectives/ before running morning coffee]
-Family:       [Set up ✓ | Not set up — add profiles to context/family/ anytime]
+Family:       [Set up ✓ | Not set up — add profiles to context/profiles/ anytime]
 
 READY TO USE
 You can now run any of these workflows:

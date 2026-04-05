@@ -11,7 +11,7 @@
 ## Family
 
 - [Brief summary of household — partner, kids, living situation]
-- See `context/family/` for detailed profiles on each person
+- See `context/profiles/` for detailed profiles on each person
 
 ## Business / Work
 

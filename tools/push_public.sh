@@ -18,7 +18,6 @@ PUBLIC_SKILLS=(
   check-email
   context
   excalidraw-diagram
-  family
   git-pull
   git-push
   gmail-draft

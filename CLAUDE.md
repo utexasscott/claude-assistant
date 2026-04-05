@@ -27,8 +27,8 @@ You're working inside the **WAT framework** (Workflows, Agents, Tools). This arc
 - Stored in `.claude/skills/[name]/SKILL.md` and invoked with `/skill-name`
 - Reusable capability modules that extend your role as agent — think of them as named, documented subroutines
 - When a skill exists for a task, invoke it rather than improvising the same logic from scratch
-- Always invoke `/skill-builder` when creating or modifying any skill — never bypass it
-- Always invoke `/context` before writing to any context file — it is a quality gate, not optional
+- Always invoke `/skill-builder` when creating or modifying any skill — never bypass it. This applies even mid-conversation: if the user says "you should always...", "from now on...", "next time...", or any feedback that would change a skill's behavior, pause and invoke `/skill-builder` before making any changes to a SKILL.md file.
+- Always invoke `/context` before writing to any context profile file (i.e., any `context/` file outside of `context/journal/`) — it is a quality gate, not optional; journal entries are written directly by the `/journal` skill, which invokes `/context` only when updating profile files
 - Always invoke `/read-journal` before responding whenever the user uses temporal language — "today," "yesterday," "this week," "recently," "earlier," or any specific date. This applies in all workflows, not just life-update or journal sessions. The journal is the ground truth for recent events; don't respond to time-relative questions without it.
 - Update skills when their behavior needs to change — don't work around an outdated skill, fix it
 - Skills are committed to the repo and must contain no sensitive data
@@ -41,7 +41,7 @@ You're working inside the **WAT framework** (Workflows, Agents, Tools). This arc
 **Sharing to Google Drive**
 - Personal context is tracked in the private GitHub repo — Drive is used **for sharing only**, not backup
 - `/push` — push `context/shared/` destinations to their Google Drive folders (e.g., co-parenting updates for Allison). Called automatically by session-end.
-- Sharing destinations and Drive folder names are defined in `context/context_policy.md` Section 2
+- Sharing destinations and Drive folder names are defined in `.claude/skills/context/SKILL-personal.md` Section 2
 - Auth token: `auth/token_drive.json` (created on first run via browser OAuth flow)
 
 **Why this matters:** When AI tries to handle every step directly, accuracy drops fast. If each step is 90% accurate, you're down to 59% success after just five steps. By offloading execution to deterministic scripts, you stay focused on orchestration and decision-making where you excel.

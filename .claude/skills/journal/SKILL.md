@@ -136,7 +136,7 @@ The `.md` journal file is a polished record, not a raw transcript. When writing 
 
 ### 8. Update shared context
 
-If `SKILL-personal.md` defines a sharing configuration, check whether the entry contains content relevant to each configured destination. If it does, create or update the shared context file at the path specified in `SKILL-personal.md`, following the format in `context/context_policy.md` Section 2.
+If `SKILL-personal.md` defines a sharing configuration, check whether the entry contains content relevant to each configured destination. If it does, create or update the shared context file at the path specified in `SKILL-personal.md`, following the format defined in `.claude/skills/context/SKILL-personal.md` Section 2.
 
 **Important:** The shared entry must be derived from the polished journal file (`context/journal/YYYY-MM-DD.md`), never from raw source files. "Verbatim from the journal entry" means the cleaned, chronologically-ordered `.md` file — not the raw dictation. This ensures the shared entry inherits the polished prose and never contains navigational asides ("Back to that phone call...", "Now back to...") that belong only in the raw files.
 
@@ -146,14 +146,25 @@ If no sharing configuration is defined, or the entry contains no relevant conten
 
 After writing the journal entry, check whether the content contains durable information that belongs in context profile files — not just the journal. The journal is the daily narrative; context files hold standing, updatable facts.
 
-Use `context/context_policy.md` Section 1 to identify which files should be updated based on the content. For each file that needs an update:
-- Invoke `/context` as the quality gate before writing (applies Checks 1–5 from that skill)
-- Add new entries to the file's Updates Log following the format in `/context` Check 4
+Use `.claude/skills/context/SKILL-personal.md` Section 1 to identify which files should be updated based on the content.
+
+**For each piece of durable content, determine which case applies:**
+
+| Content type | Action |
+|---|---|
+| **Standing fact changed** — location, status, medication, relationship, a new inferred pattern, a resolved situation | Edit the relevant structured section **in place**. Do not append a log entry — the section itself is the record. |
+| **Structural profile change** — a whole new section warranted, a significant new standing topic | Add ONE brief (one sentence max) entry to the Updates Log, then write the new section. |
+| **Narrative event** — a conversation, a moment, a feeling, something that happened | Journal only. Do not touch profile files. |
+
+The Updates Log is a changelog for the profile's structure, not a secondary journal. Most journal content that updates a profile will be a standing fact — edit the section directly.
+
+Before writing to any profile file:
+- Invoke `/context` as the quality gate (applies Checks 1–5 from that skill)
 - Do not duplicate content already accurately captured in the file
 
 If `SKILL-personal.md` defines a list of profile files to check, use that list.
 
-Skip this step if the journal content is purely narrative (events only, no durable standing facts) or if all relevant context files are already current.
+Skip this step entirely if the journal content is purely narrative (events only, no durable standing facts) or if all relevant context files are already current.
 
 ### 10. Confirm
 

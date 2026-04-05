@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: Use when creating new skills, optimizing existing skills, auditing skill quality, or asking about how skills are organized, structured, or why organizational decisions were made.
+description: Use when creating new skills, optimizing existing skills, auditing skill quality, working on a skill, discussing changes to a skill, asking whether a skill needs to change, or the user says "you should always", "from now on", or "next time" in a way that implies a skill behavior change, or asking about how skills are organized, structured, or why organizational decisions were made.
 metadata:
   visibility: public
 ---
@@ -46,6 +46,29 @@ When building a new skill:
 4. If private: do NOT add it to the whitelist
 
 **Why all skills live in the same directory:** Claude Code only discovers skills from `.claude/skills/<name>/SKILL.md`. Subdirectories like `.claude/private/skills/` are silently ignored. All skills share the same path pattern; public/private is a sync concern, not a location concern.
+
+### Personal skill extensions (SKILL-personal.md)
+
+Some public skills need personal configuration — routing tables, account identifiers, sharing policies, or other user-specific details that would make the skill private if embedded directly in SKILL.md.
+
+The solution mirrors the CLAUDE.md / CLAUDE-personal.md pattern:
+
+- **SKILL.md** — generic, public-safe workflow logic. No personal data. Committed to public repo.
+- **SKILL-personal.md** — personal configuration and extensions. Lives in the same skill directory alongside SKILL.md. Contains routing tables, personal references, sharing policies, or any config that varies by user.
+
+**How it works:**
+- SKILL.md explicitly reads SKILL-personal.md when personal config is needed (e.g., "Read SKILL-personal.md in this skill's directory for the routing table")
+- `push_public.sh` automatically strips SKILL-personal.md from public repo copies
+- The public `.gitignore` excludes `**SKILL-personal.md` so it never leaks
+
+**When to use it:**
+- A public skill needs a routing table, sharing policy, or account-specific config
+- You want the workflow logic to be shareable but the personal details private
+- The alternative would be storing config as a one-off file in `context/` (anti-pattern — config belongs with the skill that uses it)
+
+**Example:** The `context` skill uses `SKILL-personal.md` to store file routing (which information goes to which context file) and sharing policy (what gets shared with whom and how to filter it). The skill logic in SKILL.md is generic; the personal config lives in SKILL-personal.md alongside it.
+
+---
 
 ## Quick Start: What Is a Skill?
 
