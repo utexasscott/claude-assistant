@@ -183,6 +183,24 @@ When a workflow instructs you to journal a conversation (rather than logging ver
 
 ---
 
+## When Logging an AI Response
+
+When the user asks to add an AI response to the journal (e.g., "add your response to the journal," "log that AI answer," "save what you said"), follow these rules:
+
+**Section heading:** `## [Topic] — AI Response`
+
+**Attribution callout:** Open the section with this exact callout, italicized:
+
+> *⚠️ AI-generated response. The analysis below was produced by Claude, not Scott. Scott found it helpful and added it to the record, but it may contain errors, overreach, or clinically unverified claims. It should be read as a thinking tool, not ground truth.*
+
+**Why this matters:** AI analysis and Scott's own words are epistemically different. Scott's thoughts are primary; AI responses are auxiliary thinking tools that may misrepresent facts, draw incorrect inferences, or introduce claims Scott never made. The attribution callout ensures that when this entry is read back later, the distinction is clear and the AI-generated content is weighted appropriately.
+
+**What to include:** The AI response text, faithfully reproduced. Do not editorialize, summarize, or clean it up beyond light formatting. The content should be recognizable as what was actually said.
+
+**Shared context:** Do not propagate AI-attributed sections into shared context files (e.g., Allison's journal). AI responses belong in the private journal only.
+
+---
+
 ## Notes
 
 - `context/journal/` is gitignored. Never commit journal files.
