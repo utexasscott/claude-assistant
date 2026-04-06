@@ -50,7 +50,15 @@ There are three ways content arrives:
 
 **If content arrived as a ramble, conversation, or via agent detection (Cases 1 & 3):**
 - Content is whatever the user said or the agent captured
-- Proceed to Step 3
+- Proceed to Step 2a
+
+### 2a. Detect AI conversation format
+
+Scan the content for AI conversation structure: alternating speaker blocks with a named AI (Gemini, ChatGPT, Claude, GPT, etc.), explicit speaker labels ("[User]:", "Gemini:", etc.), or a consistent separator pattern (e.g., `--`) between turns.
+
+**If detected:** Read `.claude/skills/journal/SKILL-ai_conversation.md` now. Its parsing and classification rules override the general categorization and prose-writing instructions in Steps 5–7. Complete the full turn-classification pass described in that file **before writing anything to the journal.**
+
+**If not detected:** Continue to Step 3.
 
 ### 3. Write to raw file (Cases 1 & 3 only)
 
@@ -142,33 +150,33 @@ If `SKILL-personal.md` defines a sharing configuration, check whether the entry 
 
 If no sharing configuration is defined, or the entry contains no relevant content, skip this step.
 
-### 9. Update context profile files
+### 9. Spawn background analysis agents
 
-After writing the journal entry, check whether the content contains durable information that belongs in context profile files — not just the journal. The journal is the daily narrative; context files hold standing, updatable facts.
+After the journal entry is written, assess whether background agents should run. These agents read the **journal file** (never the raw source) and write proposals to `.tmp/` — they never edit profiles directly. All proposals require review before being applied.
 
-Use `.claude/skills/context/SKILL-personal.md` Section 1 to identify which files should be updated based on the content.
+**Biography extractor** — spawn if the journal contains historical biographical data: past moves, ages when things happened, schools, people from the user's past, life milestones, or periods they describe as emotionally significant.
 
-**For each piece of durable content, determine which case applies:**
+Spawn the `biography-extractor` agent with:
+```
+Task: "Read context/journal/YYYY-MM-DD.md. Extract any new biographical facts the user stated and write proposals to .tmp/YYYY-MM-DD_biography_proposals.md. Follow your instructions for what counts as biographical and what to skip."
+```
 
-| Content type | Action |
-|---|---|
-| **Standing fact changed** — location, status, medication, relationship, a new inferred pattern, a resolved situation | Edit the relevant structured section **in place**. Do not append a log entry — the section itself is the record. |
-| **Structural profile change** — a whole new section warranted, a significant new standing topic | Add ONE brief (one sentence max) entry to the Updates Log, then write the new section. |
-| **Narrative event** — a conversation, a moment, a feeling, something that happened | Journal only. Do not touch profile files. |
+**Profile updater** — spawn if the journal contains potential standing facts: current location, relationship status, health, housing, business status, or other durable data that could be stale in profile files.
 
-The Updates Log is a changelog for the profile's structure, not a secondary journal. Most journal content that updates a profile will be a standing fact — edit the section directly.
+Spawn the `profile-updater` agent with:
+```
+Task: "Read context/journal/YYYY-MM-DD.md. Identify any durable standing facts and write profile update proposals to .tmp/YYYY-MM-DD_profile_proposals.md. Follow your instructions for what to skip (narrative events, AI-attributed content)."
+```
 
-Before writing to any profile file:
-- Invoke `/context` as the quality gate (applies Checks 1–5 from that skill)
-- Do not duplicate content already accurately captured in the file
+Both agents should run with `run_in_background: true`. The main context does not wait.
 
-If `SKILL-personal.md` defines a list of profile files to check, use that list.
+**Psychoanalysis** — NOT triggered automatically. Only invoked when the user explicitly requests it ("run psychoanalysis", "let's do a therapy session", or similar). When requested conversationally, invoke the `/therapy` skill — it handles the live session inline. Do not read the agent file directly.
 
-Skip this step entirely if the journal content is purely narrative (events only, no durable standing facts) or if all relevant context files are already current.
+**Skip agent spawning entirely** if the journal entry is purely narrative (events, feelings, no durable facts or historical data).
 
 ### 10. Confirm
 
-Reply with one short line confirming what was written, to which date's entry, and which section(s) were affected. Do not restate the content.
+Reply with one short line confirming what was written, to which date's entry, and which section(s) were affected. If background agents were spawned, note which ones and where their proposals will appear (`.tmp/YYYY-MM-DD_*.md`). Do not restate the content.
 
 ---
 
@@ -191,9 +199,9 @@ When the user asks to add an AI response to the journal (e.g., "add your respons
 
 **Attribution callout:** Open the section with this exact callout, italicized:
 
-> *⚠️ AI-generated response. The analysis below was produced by Claude, not Scott. Scott found it helpful and added it to the record, but it may contain errors, overreach, or clinically unverified claims. It should be read as a thinking tool, not ground truth.*
+> *⚠️ AI-generated response. The analysis below was produced by [AI Name], not the user. The user found it helpful and added it to the record, but it may contain errors, overreach, or clinically unverified claims. It should be read as a thinking tool, not ground truth.*
 
-**Why this matters:** AI analysis and Scott's own words are epistemically different. Scott's thoughts are primary; AI responses are auxiliary thinking tools that may misrepresent facts, draw incorrect inferences, or introduce claims Scott never made. The attribution callout ensures that when this entry is read back later, the distinction is clear and the AI-generated content is weighted appropriately.
+**Why this matters:** AI analysis and the user's own words are epistemically different. The user's thoughts are primary; AI responses are auxiliary thinking tools that may misrepresent facts, draw incorrect inferences, or introduce claims the user never made. The attribution callout ensures that when this entry is read back later, the distinction is clear and the AI-generated content is weighted appropriately.
 
 **What to include:** The AI response text, faithfully reproduced. Do not editorialize, summarize, or clean it up beyond light formatting. The content should be recognizable as what was actually said.
 

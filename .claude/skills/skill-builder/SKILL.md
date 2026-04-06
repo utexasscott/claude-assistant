@@ -29,7 +29,7 @@ All skills — public and private — live in `.claude/skills/<name>/SKILL.md`. 
 **Authoritative source:** `tools/push_public.sh` contains a `PUBLIC_SKILLS` array that is the single source of truth for which skills are synced to the public repo. When creating a new skill, you must decide: is it public (generic, usable by anyone) or private (references personal data, accounts, or names)?
 
 - **Public skills** go in the `PUBLIC_SKILLS` whitelist in `tools/push_public.sh`. They must contain no personal data — no proper names, account identifiers, or specific organizations. Use role-based language (e.g., "the user's email account") instead.
-- **Private skills** are NOT added to that whitelist. They stay in the private repo only. Examples: `myla-mh-email`, `life-update`, `myla-progress`.
+- **Private skills** are NOT added to that whitelist. They stay in the private repo only. Example: `myla-mh-email`
 
 All skills use a `metadata.visibility` field for self-documentation:
 ```yaml
@@ -67,6 +67,66 @@ The solution mirrors the CLAUDE.md / CLAUDE-personal.md pattern:
 - The alternative would be storing config as a one-off file in `context/` (anti-pattern — config belongs with the skill that uses it)
 
 **Example:** The `context` skill uses `SKILL-personal.md` to store file routing (which information goes to which context file) and sharing policy (what gets shared with whom and how to filter it). The skill logic in SKILL.md is generic; the personal config lives in SKILL-personal.md alongside it.
+
+### The Three-Tier Architecture: Skills, Subskills, and Agents
+
+This project uses three distinct layers. Understanding when to use each is the core design decision when building new capabilities.
+
+**Tier 1 — Skills** (`.claude/skills/*/SKILL.md`)
+User-facing. Invoked with `/skill-name` or auto-detected from natural language. Orchestrate work: they read context, call subskills when needed, spawn agents for heavy tasks, and report results. Skills should stay under 500 lines; move specialized procedures into subskills.
+
+**Tier 2 — Subskills** (`.claude/skills/*/SKILL-*.md`)
+Internal procedure documents. Live in a skill's directory alongside `SKILL.md`. No frontmatter — they are not registered as skills and are invisible to the user and to Claude's auto-invocation. The parent `SKILL.md` explicitly reads them with a `Read` tool call when the relevant case arises. They are never invoked from anywhere else.
+
+Naming: `SKILL-[specialization].md` (e.g., `SKILL-personal.md`, `SKILL-ai_conversation.md`)
+
+Create a subskill when:
+- The parent SKILL.md would exceed 500 lines without it
+- The procedure applies only to a subset of the skill's input types
+- The rules are complex enough to warrant standalone documentation
+
+Do NOT create a subskill when:
+- The procedure is simple enough to inline
+- The same procedure would be useful across multiple skills → make an agent or a new skill instead
+
+**Tier 3 — Agents** (`.claude/agents/*.md`)
+Autonomous workers. Have their own isolated context — no conversation history, no session state. Invoked via the `Agent` tool (`subagent_type: "agent-name"`) or via `context: fork` + `agent:` in a skill's frontmatter. Can be restricted to specific tools via the `tools` field. Produce file outputs (typically to `.tmp/`) rather than returning conversational results.
+
+Agent file format:
+```yaml
+---
+name: agent-name
+description: When to use this agent (used by Agent tool for subagent_type selection)
+model: sonnet  # optional
+tools: Read, Glob, Write  # optional; restricts available tools
+---
+
+System prompt / persona / methodology for this agent.
+```
+
+Create an agent when:
+- The task is self-contained and doesn't need conversation history
+- The task produces verbose output that shouldn't fill the main context window
+- The task can run in parallel with other work (`run_in_background: true`)
+- Multiple skills need the same worker capability
+- You want to enforce specific tool restrictions (e.g., read-only, no shell access)
+
+Do NOT create an agent when:
+- The task needs back-and-forth with the user → keep in main context
+- The task needs the current conversation's context → keep in main context
+- The task is simple enough to inline in the skill
+
+**Dual-mode agents:** Some agents serve two purposes. In worker mode they run as background agents producing staging files. In persona mode, a skill reads the agent definition file and the current Claude instance adopts its methodology inline (useful when the task needs live conversation). Document which modes apply in the agent's `description` field.
+
+**Decision tree:**
+
+```
+Should the user be able to invoke this directly?
+└── Yes → Skill
+└── No, it's called by a skill
+    ├── It's a procedure variant for a subset of inputs → Subskill
+    └── It's a self-contained autonomous task → Agent
+```
 
 ---
 

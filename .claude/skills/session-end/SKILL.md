@@ -22,24 +22,15 @@ Run `git status --porcelain`.
 
 ### Step 2: Security Review
 
-Scope the scan to only the files that will be staged. From the `git status --porcelain` output:
+Invoke the `/security-sweep` skill in **brief mode**:
 
-1. Extract all file paths (the second column, after the two-character status code).
-2. Filter OUT gitignored paths: `auth/`, `.env`, `.tmp/`. Everything else (including `context/`) is a committed path in the private repo.
-3. If no files remain after filtering, note "Security scan: no tracked-path files changing" and skip to Step 3.
-4. For Python files (`.py`), scan for:
-   - Command injection (`subprocess` with `shell=True` + unsanitized input)
-   - Path traversal (unvalidated file path args)
-   - Hardcoded secrets/API keys
-   - `eval`/`exec` with external input
-   - YAML/pickle deserialization with untrusted data
-   - HTML injection (f-string interpolation of external data into HTML)
-5. For all other files (markdown, YAML, etc.), scan for hardcoded secrets/API keys only.
-6. Only report findings with >80% confidence of real exploitability. Skip theoretical issues.
-7. If findings exist, list them clearly and ask the user if they want to fix before pushing.
-   - If the user says to continue despite findings, proceed to Step 3.
-   - If the user wants to fix first, stop here.
-8. If no findings, note "Security scan: clean" and continue.
+```
+/security-sweep brief
+```
+
+- If the sweep finds no issues, note "Security scan: clean" and continue.
+- If the sweep finds issues and the user wants to fix them first, stop here.
+- If the user says to continue despite findings, proceed to Step 3.
 
 ### Step 3: Git Push
 

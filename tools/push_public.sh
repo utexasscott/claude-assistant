@@ -13,6 +13,15 @@ PUBLIC_REMOTE="https://github.com/utexasscott/claude-assistant.git"
 WORK_DIR="$REPO_ROOT/.tmp/claude-assistant"
 COMMIT_MSG="${1:-Sync public-safe content from personal-assistant}"
 
+# ── Private-only paths (never synced to public repo) ─────────────────────────
+# context/                  — all personal data
+# workflows/private/        — personal SOPs
+# workflows/_index.md       — personal route table
+# CLAUDE-personal.md        — personal extensions to agent instructions
+# .claude/agents/           — agents are user-specific (contain personal names/paths)
+# .claude/skills/*/SKILL-personal.md  — stripped automatically below
+# .env, auth/               — credentials and tokens (gitignored)
+
 # ── Public skills whitelist ────────────────────────────────────────────────────
 PUBLIC_SKILLS=(
   check-email

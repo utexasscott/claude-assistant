@@ -1,15 +1,42 @@
 # Workflow: Security Sweep
 
 ## Objective
-Audit all committed files for accidentally included personal information. Identify names, institutions, organizations, or other personal details that should live in `context/` instead of public committed paths. Remediate findings by moving data to context files and updating references.
 
-## When to Run
-- On demand when you suspect a committed file contains personal details
-- After adding any new file to a committed path (`workflows/public/`, `.claude/skills/`, `tools/`, `context_example/`, `CLAUDE.md`, `README.md`)
-- Periodically as a routine hygiene check before pushing to GitHub
+Audit files for two distinct threats, depending on what is being swept:
 
-## Required Inputs
-None. This workflow operates on the repository itself.
+1. **Credential leak** — secrets or API keys accidentally committed to git (applies to any committed file in the private repo)
+2. **Personal data leak** — PII or user-specific proper nouns in files that get synced to the public repo
+
+These threats have different scopes and must be checked separately.
+
+## The Dual-Repo Structure
+
+This project uses two GitHub repos:
+
+| Repo | Purpose | What goes there |
+|------|---------|-----------------|
+| **Private repo** (personal-assistant) | Source of truth; all personal context | Everything, including `context/`, `CLAUDE-personal.md`, private workflows, agents |
+| **Public repo** (claude-assistant) | Shareable skeleton | Whitelisted skills, public workflows, tools, CLAUDE.md, context_example/ |
+
+The sync from private → public is done by `tools/push_public.sh`, which:
+- Copies only whitelisted skills (see `PUBLIC_SKILLS` array in that script)
+- Copies `tools/`, `workflows/public/`, `workflows/_example/`, `context_example/`, `CLAUDE.md`
+- Strips all `SKILL-personal.md` files automatically
+- Does NOT copy `.claude/agents/`, `context/`, `workflows/private/`, `CLAUDE-personal.md`
+
+**Agents are private by design.** `.claude/agents/` is not synced to the public repo. Agent files may contain user-specific names and paths — that is expected and acceptable.
+
+## Sweep Modes
+
+### Brief mode (pre-push)
+Scope: only files that are staged or modified and about to be committed.
+Purpose: fast pre-commit gate, called automatically by session-end.
+Source files: `git status --porcelain` + `git diff --name-only HEAD`
+
+### Thorough mode (full audit)
+Scope: all files currently tracked by git.
+Purpose: periodic hygiene check or ad-hoc review of the full repo state.
+Source files: `git ls-files`
 
 ---
 
@@ -17,39 +44,65 @@ None. This workflow operates on the repository itself.
 
 ### Step 1 — Identify files to sweep
 
-This workflow operates in one of two modes:
-
-**On-demand mode** (default — invoked directly or as a routine hygiene check):
-Run: `git ls-files`
-Returns every file currently tracked by git. Filter to committed paths only (see list below).
-
-**Pre-push mode** (invoked from session-end or git-push, when only changed files should be reviewed):
+**If brief mode:**
 Run: `git status --porcelain` and `git diff --name-only HEAD`
-Combine results to get the set of files being added or modified in the upcoming commit. Filter to committed paths only (see list below). If both commands return nothing, there is nothing to scan — confirm "Pre-push scan: nothing to commit, scan skipped" and stop.
+Combine and deduplicate the file paths. If both return nothing, output "Brief scan: nothing staged or modified — scan skipped" and stop.
 
-**Committed paths to sweep (both modes):**
+**If thorough mode:**
+Run: `git ls-files`
+
+From the file list, split into two buckets:
+
+**Bucket A — Private-repo-only paths** (credential scan only):
+- `context/`
+- `workflows/private/`
+- `workflows/_index.md`
+- `CLAUDE-personal.md`
+- `.claude/agents/`
+- `.claude/skills/*/SKILL-personal.md`
+
+**Bucket B — Public-repo paths** (both credential scan AND personal data scan):
 - `workflows/public/`
-- `.claude/skills/`
+- `workflows/_example/`
 - `context_example/`
 - `tools/`
+- `.claude/skills/` (excluding SKILL-personal.md files, which go in Bucket A)
 - `CLAUDE.md`
 - `README.md`
 
-Exclude gitignored paths — `context/`, `workflows/private/`, `auth/`, `.env`, `.tmp/` — personal data is expected and acceptable there.
+Skip gitignored paths entirely — they are never committed: `auth/`, `.env`, `.tmp/`
 
-Edge cases:
-- If the filtered file list is empty in pre-push mode, confirm "No files in committed paths are changing — security scan skipped" and stop.
-- If `git ls-files` or `git status` shows unexpected files in committed paths, flag them before proceeding — they may have been accidentally staged.
+If both buckets are empty after filtering, confirm "Scan: no relevant files — skipped" and stop.
 
 ---
 
-### Step 2 — Sweep for personal data (Agent Step)
+### Step 2 — Credential scan (all files in both buckets)
 
-Read each file in the committed paths listed above. Flag any instance of:
+For every file in Bucket A and Bucket B:
+
+**For Python files (`.py`), flag:**
+- `subprocess` with `shell=True` and unsanitized input (command injection)
+- Unvalidated file path arguments (path traversal)
+- Hardcoded secrets, API keys, or tokens
+- `eval`/`exec` with external input
+- YAML/pickle deserialization with untrusted data
+- f-string interpolation of external data into HTML (HTML injection)
+
+**For all other files, flag:**
+- Hardcoded secrets, API keys, tokens, or passwords
+- `.env`-style `KEY=VALUE` patterns with real values
+
+Only report findings with >80% confidence of being real credentials, not placeholder examples or template variables.
+
+---
+
+### Step 3 — Personal data scan (Bucket B only)
+
+Read each file in Bucket B. Flag any instance of:
 
 **High-risk — always flag:**
-- Names of schools, medical providers, treatment programs, or activity organizations tied to a specific person
 - Full names of real people (first + last, or a nickname that uniquely identifies someone)
+- Names of schools, medical providers, treatment programs, or activity organizations tied to a specific person
 - Email addresses or phone numbers belonging to real people
 - Scouting pack numbers, sports team names, or club names that identify a specific person's activities
 - Account or service names that reveal personal usage patterns
@@ -64,76 +117,121 @@ Read each file in the committed paths listed above. Flag any instance of:
 - Technical names: API service names, Python packages, tool filenames
 - Geographic references at city level or above ("Austin TX" is fine)
 - Role references without names ("user's child", "work account", "school communications")
-
-Write a findings table:
-
-```
-| File | Line | Content | Risk | Proposed Fix |
-|------|------|---------|------|-------------|
-| workflows/public/example.md | 42 | Specific School Name | High | Move to context/file.md, replace with generic reference |
-```
-
-If no findings: confirm "No personal data found in committed paths" and stop.
+- The public repo URL itself (`github.com/...`)
 
 ---
 
-### Step 3 — Review findings with user
+### Step 4 — Present findings
 
-Present the findings table and proposed fixes. For each item, propose one of:
+Always present results as a findings table, even if empty:
 
-- **Move to context**: Extract to an appropriate `context/` file and update the source to use a generic reference or a comment pointing to context
-- **Generalize**: Replace the specific name/value with a role-based description (e.g., replace [school name] with `school communications`)
-- **Dismiss**: If the user confirms it's intentional public data (rare — most proper nouns are personal)
+```
+## Credential Findings
+
+| File | Line | Content | Risk | Proposed Fix |
+|------|------|---------|------|-------------|
+| tools/example.py | 12 | api_key = "sk-abc123" | High | Move to .env, load via os.environ |
+
+## Personal Data Findings (public-path files only)
+
+| File | Line | Content | Risk | Proposed Fix |
+|------|------|---------|------|-------------|
+| workflows/public/example.md | 42 | Specific School Name | High | Generalize to "the user's school" |
+```
+
+If a bucket is clean, write "No findings" under that section header.
+
+After presenting findings, propose one of the following for each item:
+- **Generalize** — replace the specific name/value with a role-based description
+- **Move to context** — extract to an appropriate `context/` file and replace with a generic reference or a comment pointing to context
+- **Move to SKILL-personal.md** — if it's a config value that belongs with a specific skill
+- **Move to .env** — for hardcoded credentials or API keys
+- **Dismiss** — if the user confirms it's intentional public data (rare)
 
 Do not make any changes until the user reviews and approves each proposed fix.
 
 ---
 
-### Step 4 — Remediate (Agent Step)
+### Step 5 — Remediate (if approved)
 
 For each confirmed finding:
 
-**If moving to context:**
-1. Identify the correct `context/` file (e.g., `context/email_triage_rules.md` for email-related rules, a family file for person-specific details)
-2. Read the target file, or create it if it doesn't exist
-3. Add the personal data in the appropriate section with a brief label
-4. Update the source file: replace the specific name with a generic description and add a comment like `# See context/[file].md for personal values`
-5. Confirm both edits before writing
-
 **If generalizing:**
-1. Replace the specific name with a role-based placeholder
-2. If the specific names are needed to make the workflow useful, add a note in `## Known Constraints & Notes` directing the user to fill in their own values in context
+Replace the specific name with a role-based placeholder. If the value is needed to make the workflow useful, add a note directing users to supply their own value via `context/` or `SKILL-personal.md`.
 
-After all remediations, run: `git diff` to show the full diff of changes made.
+**If moving to context:**
+1. Identify or create the correct `context/` file
+2. Add the personal data in the appropriate section with a brief label
+3. Update the source file: replace the specific name with a generic description and add a comment like `# See context/[file].md for personal values`
+
+**If moving to .env:**
+1. Add the variable to `.env` (never commit this file)
+2. Update the script to use `os.environ.get("VAR_NAME")` or equivalent
+
+After all remediations, run `git diff` and show the full diff for review.
 
 ---
 
-### Step 5 — Verify
+### Step 6 — Verify
 
 For each originally flagged term, confirm removal:
 
-Run: `git ls-files | xargs grep -rn "[flagged term]"`
+Run: `git ls-files | xargs grep -rn "[flagged term]"` (thorough mode)
+Or: check only the modified files (brief mode)
 
 If any instance remains in a committed path, surface it and ask the user how to handle it.
 
-Re-read each modified file to confirm no new personal data was introduced during editing.
+---
+
+### Step 7 — Identify public promotion candidates (thorough mode only)
+
+Skip this step entirely in brief mode.
+
+For each file in **Bucket A** (private-only paths), assess whether it could be safely promoted to Bucket B (public-synced) with little or no changes. A file is a promotion candidate if ALL of the following are true:
+
+1. The PII scan found no personal data in it
+2. The content is generic and reusable — it would be useful to someone else running this framework
+3. It is not an agent file (`.claude/agents/`) — agents are inherently user-specific and should never be promoted
+
+For skill files (`.claude/skills/*/SKILL.md`) that are candidates:
+- Proposed action: set `metadata.visibility: public` and add to `PUBLIC_SKILLS` in `tools/push_public.sh`
+
+For workflow files in `workflows/private/` that are candidates:
+- Proposed action: move to `workflows/public/` and update any references
+
+Present as a separate section after the findings table:
+
+```
+## Public Promotion Candidates
+
+| File | Type | Reason it qualifies | Proposed action |
+|------|------|--------------------|----|
+| .claude/skills/foo/SKILL.md | skill | No personal data; generic workflow | Add to PUBLIC_SKILLS; set visibility: public |
+| workflows/private/bar.md | workflow | No personal data; generic SOP | Move to workflows/public/ |
+```
+
+If no candidates: write "No promotion candidates found."
+
+Do not promote anything automatically. The user must confirm each candidate before any changes are made.
 
 ---
 
 ## Success Criteria
-- [ ] All committed files swept for personal data
-- [ ] Findings table presented and reviewed by user
-- [ ] All confirmed findings remediated (moved to context or generalized)
-- [ ] Source files updated with generic references or context pointers
-- [ ] No flagged terms remain in committed paths
-- [ ] `git diff` reviewed by user before any push
+- [ ] Credential scan run on all committed files in scope
+- [ ] Personal data scan run on all public-path files in scope
+- [ ] Findings table presented to user
+- [ ] All confirmed findings remediated
+- [ ] No flagged terms remain in public-path files
+- [ ] `git diff` reviewed before any push
+- [ ] (thorough only) Promotion candidates table presented to user
 
 ## Known Constraints & Notes
-- This workflow only covers committed files. Gitignored paths (`context/`, `.env`, `auth/`, `workflows/private/`) are excluded by design — personal data is expected there.
-- The sweep in Step 2 is an agent step and depends on pattern recognition. It may miss subtle PII (e.g., a business name that indirectly identifies the user). Treat findings as a floor, not a ceiling.
-- When creating `context/` files to store extracted data, follow the naming conventions in `context/` — lowercase, underscores, grouped by topic.
-- This workflow does not replace the public/private classification check in `create_workflow.md`. That check happens at authoring time. This workflow catches anything that slipped through.
+- Gitignored paths (`context/`, `.env`, `auth/`, `.tmp/`) are excluded — personal data is expected and acceptable there
+- `.claude/agents/` is private-only and not synced to the public repo — agent files may contain user-specific names by design; flag credentials but not personal references in these files
+- The credential scan is pattern-based and may miss obfuscated secrets. Treat findings as a floor, not a ceiling.
+- This workflow does not replace the public/private classification check at authoring time. That check happens when creating new workflows or skills. This workflow catches anything that slipped through.
 
 ## Improvement Log
-- 2026-03-03 — Workflow created. Triggered by personal organization names (school and activity names) found in `workflows/public/check_email.md`.
-- 2026-03-27 — Added pre-push mode to Step 1. Scopes the sweep to only files being committed rather than all tracked files. Prevents unnecessary scanning when no relevant files are changing.
+- 2026-03-03 — Workflow created. Triggered by personal organization names found in a public workflow.
+- 2026-03-27 — Added pre-push mode to Step 1. Scopes sweep to only files being committed.
+- 2026-04-06 — Full rewrite. Added dual-repo structure context, renamed modes to brief/thorough, split credential scan from personal data scan, added Bucket A/B classification, clarified agent file handling. Added Step 7: public promotion candidates (thorough mode only).

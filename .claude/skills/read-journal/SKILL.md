@@ -8,7 +8,7 @@ metadata:
 
 ## What This Skill Does
 
-Reads recent journal entries from `context/journal/` and outputs their contents to the conversation. Called by workflows (like `life_update`) to load recent context before a session, or directly when the user wants to review past entries.
+Reads recent journal entries from `context/journal/` and outputs their contents to the conversation. Called by workflows to load recent context before a session, or directly when the user wants to review past entries.
 
 ---
 
