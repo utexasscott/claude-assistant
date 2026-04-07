@@ -142,6 +142,14 @@ The `.md` journal file is a polished record, not a raw transcript. When writing 
 
 **Use natural prose** — Write in flowing paragraphs within sections. Reserve bullet points for lists (action items, skill references, etc.) rather than narrative events.
 
+**Resolution summaries for progressive reasoning** — When a section builds through a chain of analysis where the key conclusion or decision arrives late in the narrative, add a **Resolution** summary block immediately after the section heading, before the prose. Format it as a blockquote:
+
+```
+> **Resolution:** [2–4 sentences capturing the settled conclusion, clinical implication, or decision reached.]
+```
+
+Apply this when: the section is long and the payoff is at the end, the reasoning loops back multiple times before landing, or the section would be opaque to a first-time reader without knowing where it ends up. Skip it for short sections, purely narrative accounts (what happened), or sections where the conclusion is obvious from the first paragraph.
+
 ### 8. Update shared context
 
 If `SKILL-personal.md` defines a sharing configuration, check whether the entry contains content relevant to each configured destination. If it does, create or update the shared context file at the path specified in `SKILL-personal.md`, following the format defined in `.claude/skills/context/SKILL-personal.md` Section 2.
@@ -205,7 +213,7 @@ When the user asks to add an AI response to the journal (e.g., "add your respons
 
 **What to include:** The AI response text, faithfully reproduced. Do not editorialize, summarize, or clean it up beyond light formatting. The content should be recognizable as what was actually said.
 
-**Shared context:** Do not propagate AI-attributed sections into shared context files (e.g., Allison's journal). AI responses belong in the private journal only.
+**Shared context:** Do not propagate AI-attributed sections into shared context files (e.g., the shared journal). AI responses belong in the private journal only.
 
 ---
 
