@@ -40,8 +40,23 @@ There are three ways content arrives:
 ### 2. Identify the input source and collect content
 
 **If the user asked to read raw files (Case 2):**
-- Read the specified file(s) from `context/journal/raw/YYYY-MM-DD/`
-- If no specific file is named, read all files in that folder
+
+*Named files (everything except `auto-generated.txt`):*
+- Use Glob to list all files in `context/journal/raw/YYYY-MM-DD/` (excluding `.processed` and `auto-generated.txt`)
+- Read `.processed` if it exists — it contains filenames already incorporated, one per line
+- Exclude any file whose name appears in `.processed` from the working list
+
+*`auto-generated.txt` (handled separately — never in `.processed`):*
+- If `auto-generated.txt` exists in the raw folder, read it
+- Find the last line matching `---[processed: HH:MM:SS]---`
+- If found: extract only the content **after** that line — that is the new unprocessed content
+- If not found: the entire file is unprocessed
+- If the file doesn't exist, or all content is before the last marker (nothing new): skip it
+
+*Pre-flight and stopping logic:*
+- If no named files remain AND `auto-generated.txt` has no new content: reply "All raw files for YYYY-MM-DD have already been processed. Nothing new to add." and stop.
+- Output one pre-flight line before reading anything: "Reading [N] file(s) from raw/YYYY-MM-DD/ — [file1], [file2], ...[+ auto-generated.txt (new content only)]. Writing to context/journal/YYYY-MM-DD.md. ([M] previously processed file(s) skipped.)" — omit the auto-generated clause if there's nothing new in it; omit the skipped clause if M=0.
+- Read the listed files and the new portion of `auto-generated.txt`
 - Proceed to Step 3.5 — do NOT create `auto-generated.txt`
 
 **If `$ARGUMENTS` starts with `.tmp/` or ends with `.md` (file path):**
@@ -127,6 +142,20 @@ If the existing file has unstructured or monolithic content (e.g., a single `## 
 - *Append within section* when new content is a new event, thought, or additional context.
 - When in doubt, append within the section.
 
+### 6a. Update the processed-files manifest (Case 2 only)
+
+After writing the journal file, update tracking for each source type differently:
+
+**Named files** → update `context/journal/raw/YYYY-MM-DD/.processed`:
+- If the file does not exist, create it
+- Append each newly processed filename, one per line (do not re-add filenames already present)
+- Never include `.processed` or `auto-generated.txt` in this list
+
+**`auto-generated.txt`** → append a timestamp marker to the file itself:
+- Append a blank line followed by `---[processed: HH:MM:SS]---` (current time, 24-hour)
+- This marks the boundary between what has been incorporated and any future content
+- Never add `auto-generated.txt` to `.processed`
+
 ### 7. Quality: clean prose and logical order
 
 The `.md` journal file is a polished record, not a raw transcript. When writing or reorganizing content, apply these standards:
@@ -158,33 +187,32 @@ If `SKILL-personal.md` defines a sharing configuration, check whether the entry 
 
 If no sharing configuration is defined, or the entry contains no relevant content, skip this step.
 
-### 9. Spawn background analysis agents
+**Do not update `context/profiles/` in this step.** Profile routing is handled by the background agents spawned in Step 9.
 
-After the journal entry is written, assess whether background agents should run. These agents read the **journal file** (never the raw source) and write proposals to `.tmp/` — they never edit profiles directly. All proposals require review before being applied.
+### 9. Confirm and offer
 
-**Biography extractor** — spawn if the journal contains historical biographical data: past moves, ages when things happened, schools, people from the user's past, life milestones, or periods they describe as emotionally significant.
+Reply with one short line confirming what was written, to which date's entry, and which section(s) were affected. Do not restate the content.
 
-Spawn the `biography-extractor` agent with:
+Then ask: "Run background analysis? (psychoanalysis + profiles) (y/n)"
+
+If yes: spawn all three agents in parallel with `run_in_background: true`:
+
 ```
-Task: "Read context/journal/YYYY-MM-DD.md. Extract any new biographical facts the user stated and write proposals to .tmp/YYYY-MM-DD_biography_proposals.md. Follow your instructions for what counts as biographical and what to skip."
+Agent 1 — psychoanalysis:
+Task: "Run psychoanalysis for YYYY-MM-DD. Read all files in context/journal/raw/YYYY-MM-DD/ and follow your instructions."
+
+Agent 2 — profile-updater:
+Task: "Run profile update for YYYY-MM-DD. Read context/journal/YYYY-MM-DD.md and follow your instructions."
+
+Agent 3 — biography-extractor:
+Task: "Run biography extraction for YYYY-MM-DD. Read context/journal/YYYY-MM-DD.md and follow your instructions."
 ```
 
-**Profile updater** — spawn if the journal contains potential standing facts: current location, relationship status, health, housing, business status, or other durable data that could be stale in profile files.
+Confirm all three were spawned. Note that:
+- Psychoanalysis writes to `context/psychoanalysis/scott_north/YYYY-MM-DD.md`
+- Profile and biography proposals write to `.tmp/YYYY-MM-DD_profile_proposals.md` and `.tmp/YYYY-MM-DD_biography_proposals.md` for review
 
-Spawn the `profile-updater` agent with:
-```
-Task: "Read context/journal/YYYY-MM-DD.md. Identify any durable standing facts and write profile update proposals to .tmp/YYYY-MM-DD_profile_proposals.md. Follow your instructions for what to skip (narrative events, AI-attributed content)."
-```
-
-Both agents should run with `run_in_background: true`. The main context does not wait.
-
-**Psychoanalysis** — NOT triggered automatically. Only invoked when the user explicitly requests it ("run psychoanalysis", "let's do a therapy session", or similar). When requested conversationally, invoke the `/therapy` skill — it handles the live session inline. Do not read the agent file directly.
-
-**Skip agent spawning entirely** if the journal entry is purely narrative (events, feelings, no durable facts or historical data).
-
-### 10. Confirm
-
-Reply with one short line confirming what was written, to which date's entry, and which section(s) were affected. If background agents were spawned, note which ones and where their proposals will appear (`.tmp/YYYY-MM-DD_*.md`). Do not restate the content.
+If no: do nothing. Run `/profile-update` to run profile agents manually.
 
 ---
 

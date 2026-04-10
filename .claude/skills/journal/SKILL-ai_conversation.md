@@ -17,7 +17,47 @@ When detected, complete the full classification pass described below **before wr
 
 ---
 
-## Step 1: Classify Every Turn
+## Step 0: Parse into Turn Pairs and Route to Subagents
+
+Before classifying, parse the transcript into numbered **turn pairs**. A turn pair = one AI turn + the user's immediate response. This is the minimum classifiable unit — never split a pair across chunks.
+
+Count the total pairs. Then:
+
+- **≤ 10 pairs total:** Classify inline using Step 1 below.
+- **> 10 pairs:** Use the subagent path.
+
+### Subagent classification path (> 10 pairs)
+
+Batch the pairs into chunks of 10–15 pairs each. Spawn one subagent per chunk **in parallel**. Each subagent receives the classification rules and its batch only — nothing else. Use this prompt template:
+
+---
+*You are classifying turns from an AI conversation transcript for a personal journal. Classify each turn pair using these rules:*
+
+*Case 1 — User's Own Thought: The user states something from their own experience, memory, or perspective. The AI did NOT just propose it.*
+
+*Case 2 — User Resonated: The AI made a claim and the user's next turn does NOT push back — they continue the thread, add supporting detail, or accept the premise.*
+
+*Case 3 — User Pushed Back: The user corrects the AI, redirects, adds context that changes the framing, or explicitly disagrees.*
+
+*Return a JSON array — one object per pair:*
+```json
+[
+  {"pair": 1, "case": 2, "user_content": "...", "ai_content": "..."},
+  {"pair": 2, "case": 1, "user_content": "...", "ai_content": null}
+]
+```
+*For Case 2, include the full AI turn text in `ai_content`. For Case 1 and Case 3, set `ai_content` to null. Omit AI closing questions from all outputs — they are conversational prompts, not content.*
+
+*TURN PAIRS:*
+*[paste chunk here]*
+
+---
+
+Wait for all subagents to complete. Merge their JSON arrays in pair-number order. Proceed to Step 3 using the merged results — skip Step 1 (inline classification).
+
+---
+
+## Step 1: Classify Every Turn (inline path — ≤ 10 pairs only)
 
 Walk through the transcript from start to finish. For each AI turn, look at the user's immediate response and classify the pair as one of three cases.
 
