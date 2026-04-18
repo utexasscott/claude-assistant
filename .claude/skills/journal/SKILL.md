@@ -34,8 +34,9 @@ There are three ways content arrives:
 
 - Default: today's date in `YYYY-MM-DD` format.
 - If `$ARGUMENTS` contains a date (e.g., `2026-03-25`), use that date instead.
-- Target journal file: `context/journal/YYYY-MM-DD.md`
-- Target raw folder: `context/journal/raw/YYYY-MM-DD/`
+- **Active window (past 10 days):** journal file at `context/journal/YYYY-MM-DD.md`, raw folder at `context/journal/raw/YYYY-MM-DD/`
+- **Archived (older than 10 days):** journal file at `context/journal/archive/YYYY-MM-DD.md`, raw folder at `context/journal/archive/raw/YYYY-MM-DD/`
+- When reading an existing journal entry or raw files, check the correct location based on the date's age before reporting that a file doesn't exist.
 
 ### 2. Identify the input source and collect content
 
@@ -124,7 +125,31 @@ A single input may contain content that belongs in multiple sections. Split it a
 
 ### 6. Write or update the journal file
 
-**First: assess whether the existing file needs restructuring.**
+**Header metadata — resolve before writing.**
+
+Every journal entry must have a metadata line on the line immediately after the `# YYYY-MM-DD` heading:
+
+```
+**Day:** [Weekday] | **With:** [Names, or "alone"] | **Location:** [Short name]
+```
+
+Example:
+```
+**Day:** Saturday | **With:** [Name] | **Location:** Atlanta — Midtown Airbnb
+```
+
+Resolve each value now if the entry is new, or check for missing fields if the entry already exists:
+
+- **Day of week:** Compute from the target date (e.g., `2026-04-11` → Saturday).
+- **Location:** Read `context/locations.md`. Scan each entry's `**Scott's stays:**` sub-bullets for a date range containing the target journal date (start date ≤ target date, AND end date > target date OR no end date). Use the `##` heading of the matching entry as the location name. If the file doesn't exist or no entry matches, use `[location unknown]`.
+- **With:** Who Scott is currently living with.
+  - First: check the most recent prior journal entry's header for a `**With:**` value. If the entry is from within the past 3 days, carry it forward as the default.
+  - If not found or more than 3 days old: prompt the user — "Who are you currently staying with?" — and wait for the answer before continuing.
+  - Use "alone" if the user is not with any of their children; list names if children are present.
+
+If the existing file already has the metadata line and all three fields are populated, skip this step.
+
+**Then: assess whether the existing file needs restructuring.**
 
 If the existing file has unstructured or monolithic content (e.g., a single `## Life Update` blob mixing multiple topics), restructure it into proper `## [Category]` sections before placing the new content. Preserve every word — only reorganize.
 
@@ -132,7 +157,8 @@ If the existing file has unstructured or monolithic content (e.g., a single `## 
 
 | Situation | Action |
 |---|---|
-| **File does not exist** | Create the file with `# YYYY-MM-DD` header and `## [Category]` section(s) |
+| **File does not exist** | Create the file with `# YYYY-MM-DD` heading, the resolved metadata line, a blank line, then `## [Category]` section(s) |
+| **File exists but metadata line is missing** | Insert the resolved metadata line on the line immediately after `# YYYY-MM-DD`, before the first section |
 | **No matching section in existing file** | Append a new `## [Category]` section at the end |
 | **Matching section exists AND new content updates or supersedes existing** (corrected count, changed status, reversed decision) | Edit the existing section in place |
 | **Matching section exists AND new content is additive** (new events, new thoughts, additional detail) | Append within or directly after the existing section |
@@ -253,3 +279,4 @@ When the user asks to add an AI response to the journal (e.g., "add your respons
 - When processing raw input (Cases 1 & 3), you write twice: once raw to `auto-generated.txt`, once cleaned to the `.md` file.
 - Use `##` for category headings. Do not use `###` or deeper nesting unless the content itself calls for it.
 - Separate sections with a blank line. Do not use `---` horizontal rules between sections.
+- When content mentions the user moving to or arriving at a new location, invoke `/locations` to record the new entry before finalizing the journal entry. The journal's location header must reflect where the user actually was on the target date.
