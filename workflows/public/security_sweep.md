@@ -60,6 +60,8 @@ From the file list, split into two buckets:
 - `CLAUDE-personal.md`
 - `.claude/agents/`
 - `.claude/skills/*/SKILL-personal.md`
+- `.env` (intentionally tracked in private repo — config only, no API secrets expected)
+- `auth/token_*.json` (intentionally tracked in private repo — OAuth tokens for machine portability)
 
 **Bucket B — Public-repo paths** (both credential scan AND personal data scan):
 - `workflows/public/`
@@ -70,7 +72,8 @@ From the file list, split into two buckets:
 - `CLAUDE.md`
 - `README.md`
 
-Skip gitignored paths entirely — they are never committed: `auth/`, `.env`, `.tmp/`
+Skip gitignored paths entirely — they are never committed: `auth/credentials.json`, `.tmp/`
+Note: `auth/token_*.json` and `.env` ARE tracked in the private repo (see Bucket A above).
 
 If both buckets are empty after filtering, confirm "Scan: no relevant files — skipped" and stop.
 
@@ -91,6 +94,10 @@ For every file in Bucket A and Bucket B:
 **For all other files, flag:**
 - Hardcoded secrets, API keys, tokens, or passwords
 - `.env`-style `KEY=VALUE` patterns with real values
+
+**Explicit exceptions — do not flag these files:**
+- `auth/token_*.json` — these files contain OAuth tokens by design; they are intentionally committed to the private repo for machine portability. Flagging them would produce noise on every session-end.
+- `.env` standard config values (email addresses, timezone, calendar IDs, work hours) — these are intentional config, not leaked secrets. Do flag any unexpected API keys (e.g., `sk-*`, `Bearer ey*`, `OPENAI_API_KEY`) that appear here.
 
 Only report findings with >80% confidence of being real credentials, not placeholder examples or template variables.
 
@@ -226,7 +233,7 @@ Do not promote anything automatically. The user must confirm each candidate befo
 - [ ] (thorough only) Promotion candidates table presented to user
 
 ## Known Constraints & Notes
-- Gitignored paths (`context/`, `.env`, `auth/`, `.tmp/`) are excluded — personal data is expected and acceptable there
+- `auth/credentials.json` and `.tmp/` are gitignored and never committed. `auth/token_*.json` and `.env` ARE tracked in the private repo by design — they are Bucket A files and exempt from flagging per the credential scan exceptions above.
 - `.claude/agents/` is private-only and not synced to the public repo — agent files may contain user-specific names by design; flag credentials but not personal references in these files
 - The credential scan is pattern-based and may miss obfuscated secrets. Treat findings as a floor, not a ceiling.
 - This workflow does not replace the public/private classification check at authoring time. That check happens when creating new workflows or skills. This workflow catches anything that slipped through.

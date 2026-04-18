@@ -17,13 +17,21 @@ Once, when a user first clones the repository. Can be re-run to update context o
 
 Before asking any questions, check what already exists:
 
-- `.env` — does it exist? If yes, is it still a copy of `.env.example` (unfilled)?
+- `.env` — does it exist and contain real values (not placeholder text)?
 - `auth/credentials.json` — does it exist?
 - `auth/` token files — do any exist?
 - `context/` — are there any filled profile files (non-example)?
 - `context/objectives/personal_goals.md` — does it exist and contain real content?
 - `workflows/_index.md` — does it exist?
 
+**Returning user on a new machine (fast path):**
+If `context/` is populated, `.env` is filled in, and token files exist — this is a returning user who has already set up on another machine and run `session-start` to pull their private repo. In this case:
+1. Confirm that `auth/credentials.json` exists. If it's missing, remind them: this file is not tracked in git — copy it from their password manager (`auth/credentials.json` → Desktop App OAuth credential downloaded from Google Cloud Console).
+2. Verify one tool works: run `python tools/get_calendar_events.py` and confirm it succeeds.
+3. If successful, report everything is set up and skip all remaining steps.
+4. If it fails (token expired or missing), go to Step 8 for just the affected auth flow — not the full setup.
+
+**First-time setup:**
 Tell the user what's already set up and what we'll be doing. Then proceed section by section. **Don't front-load all the questions at once** — go phase by phase, explain what each section is for, then ask.
 
 ---
@@ -263,8 +271,8 @@ If anything failed: identify which step failed, describe what to fix, and offer 
 
 ## Known Constraints & Notes
 - Google OAuth tokens expire after a period. If a tool fails auth later, delete the relevant `auth/token_*.json` file and re-run the tool.
-- The `auth/` directory is gitignored — tokens stay on this machine only. Each user authenticates independently.
-- `.env` is gitignored — never committed. Each user fills in their own.
+- `auth/credentials.json` is gitignored — store it in a password manager and copy to each new machine.
+- `auth/token_*.json` and `.env` ARE tracked in the private repo — they are pulled automatically by `session-start`. On a new machine, running `session-start` after cloning is sufficient; only `credentials.json` needs to be copied manually.
 - Personal context files in `context/` are gitignored. Only `context_example/` is shared.
 - `workflows/_index.md` is gitignored — each user maintains their own route table.
 - Google Keep auth (`setup_keep_auth.py`) uses an unofficial API and may break if Google changes the Keep auth flow. Skip it if meal planning isn't needed.

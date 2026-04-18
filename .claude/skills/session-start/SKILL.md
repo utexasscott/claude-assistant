@@ -19,14 +19,26 @@ Follow all steps in `.claude/skills/git-pull/SKILL.md` exactly.
 - If it succeeds (or is already up to date), continue to Step 2.
 - If it fails for any reason, report the error and **stop here**. Do not proceed until the git issue is resolved.
 
-### Step 2: Summary
+### Step 2: Check for credentials.json (new machine gate)
+
+Check whether `auth/credentials.json` exists.
+
+- If it **exists**: skip this step, continue to Step 3.
+- If it is **missing**: tell the user:
+  > `auth/credentials.json` is not tracked in git — you need to copy it from your password manager before any Google API tools will work. Everything else (`.env`, OAuth token files) was pulled from the private repo automatically.
+
+  This is non-blocking. Note it in the summary and continue.
+
+### Step 3: Summary
 
 Give a brief summary:
 - What git pulled (or "already up to date")
+- credentials.json status (present or missing with instructions)
 - Confirm the session is ready.
 
 ## Notes
 
-- The private repo (`origin`) contains everything: code, skills, workflows, and personal context.
-- No Drive pull needed — context is now tracked in git.
+- The private repo (`origin`) contains everything: code, skills, workflows, personal context, `.env`, and `auth/token_*.json`. On a new machine, `session-start` is sufficient to restore all of this.
+- `auth/credentials.json` is the one exception — it is gitignored and must be copied manually from a password manager (it's the OAuth Desktop App credential from Google Cloud Console).
+- No Drive pull needed — context is tracked in git.
 - Do not invoke this automatically. Only run when the user explicitly starts a session.
